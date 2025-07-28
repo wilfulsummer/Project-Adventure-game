@@ -1,0 +1,10 @@
+# Cursor IDE rules file
+.cursorrules
+
+# Save files
+savegame.json
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class 
