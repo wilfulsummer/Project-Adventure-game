@@ -64,5 +64,6 @@ enemy_stats = {
     "Zombie": 18,
     "Orc": 20,
     "Rat": 8,
-    "Hungry Wolf": 10
+    "Hungry Wolf": 10,
+    "Spider": 6
 } 

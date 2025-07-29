@@ -19,10 +19,12 @@ def create_weapon(x, y):
     # Make staffs stronger but require mana
     if weapon_name == "Magic Staff":
         damage = base_damage + damage_bonus + random.randint(1, 2)  # +1 to +2 extra damage
+        durability = base_durability + durability_bonus
         return {
             "name": weapon_name,
             "damage": damage,
-            "durability": base_durability + durability_bonus,
+            "durability": durability,
+            "max_durability": durability,
             "requires_mana": True,
             "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
         }
@@ -31,13 +33,16 @@ def create_weapon(x, y):
         return {
             "name": weapon_name,
             "damage": "???",
-            "durability": durability
+            "durability": durability,
+            "max_durability": durability
         }
     else:
+        durability = base_durability + durability_bonus
         return {
             "name": weapon_name,
             "damage": base_damage + damage_bonus,
-            "durability": base_durability + durability_bonus
+            "durability": durability,
+            "max_durability": durability
         }
 
 def create_armor(x, y):
@@ -47,10 +52,12 @@ def create_armor(x, y):
     # Cap scaling at 100 rooms away from (0,0)
     capped_distance = min(distance, 100)
     scaled = capped_distance // 4  # Reduced scaling from //2 to //4
+    durability = base_durability + scaled * random.choice([0, 1])
     return {
         "name": random.choice(["Leather Armor", "Iron Mail", "Bone Plate", "Troll Hide"]),
         "defense": base_defense + scaled * random.choice([0, 1]),
-        "durability": base_durability + scaled * random.choice([0, 1])
+        "durability": durability,
+        "max_durability": durability
     }
 
 def create_chest_weapon(dist):
@@ -67,10 +74,12 @@ def create_chest_weapon(dist):
     # Make staffs stronger but require mana
     if weapon_name == "Magic Staff":
         damage = base_damage + damage_bonus + random.randint(1, 2)  # +1 to +2 extra damage
+        durability = base_durability + durability_bonus
         return {
             "name": weapon_name,
             "damage": damage,
-            "durability": base_durability + durability_bonus,
+            "durability": durability,
+            "max_durability": durability,
             "requires_mana": True,
             "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
         }
@@ -79,13 +88,16 @@ def create_chest_weapon(dist):
         return {
             "name": weapon_name,
             "damage": "???",
-            "durability": durability
+            "durability": durability,
+            "max_durability": durability
         }
     else:
+        durability = base_durability + durability_bonus
         return {
             "name": weapon_name,
             "damage": base_damage + damage_bonus,
-            "durability": base_durability + durability_bonus
+            "durability": durability,
+            "max_durability": durability
         }
 
 def create_chest_armor(x, y):
@@ -97,10 +109,12 @@ def create_chest_armor(x, y):
     base_durability = random.randint(8, 15)
     bonus_def = scaled * random.choice([1, 2])
     bonus_dur = scaled * random.choice([1, 2])
+    durability = base_durability + bonus_dur
     return {
         "name": random.choice(["Enchanted Mail", "Reinforced Hide", "Darksteel Vest", "Trollbone Harness"]),
         "defense": base_defense + bonus_def,
-        "durability": base_durability + bonus_dur
+        "durability": durability,
+        "max_durability": durability
     }
 
 def create_enemy(x, y, force_boss=None):
@@ -139,7 +153,43 @@ def create_enemy(x, y, force_boss=None):
         enemy["base_attack"] = int(enemy["base_attack"] * 0.7)  # 30% damage reduction
         enemy["extra_turns"] = 2  # Rats get 2 turns (double turns)
     
+    # Special handling for spiders: very low damage
+    if name == "Spider":
+        enemy["base_attack"] = 2 + scaled  # Very low base damage that scales
+    
     return enemy
+
+def create_spider_swarm(x, y):
+    """Create a swarm of spiders with 2-4 spiders based on probability"""
+    dist = distance_from_start(x, y)
+    capped_dist = min(dist, 100)
+    scaled = capped_dist // 4
+    
+    # Determine swarm size based on probability
+    rand = random.random()
+    if rand < 0.5:
+        swarm_size = 2  # 50% chance
+    elif rand < 0.8:
+        swarm_size = 3  # 30% chance
+    else:
+        swarm_size = 4  # 20% chance
+    
+    # Create individual spiders
+    spiders = []
+    for i in range(swarm_size):
+        base_hp = 6
+        variation = random.randint(-2, 2)
+        spider = {
+            "name": "Spider",
+            "hp": base_hp + variation + scaled * random.randint(0, 1),
+            "base_attack": 2 + scaled,  # Very low damage
+            "armor_pierce": 0,  # No armor piercing
+            "is_boss": False,
+            "swarm_id": i + 1  # Track individual spiders in swarm
+        }
+        spiders.append(spider)
+    
+    return spiders
 
 def create_room(floor, x, y, learned_spells):
     from constants import room_descriptions
@@ -201,9 +251,16 @@ def create_room(floor, x, y, learned_spells):
         for _ in range(random.randint(0, 2)):
             base = create_weapon(x, y)
             bonus = random.randint(1, 3)
+            
+            # Handle Spell Book damage (which is "???")
+            if base["name"] == "Spell Book":
+                damage = "???"
+            else:
+                damage = base["damage"] + bonus
+            
             items.append({
                 "name": f"{base['name']}+{bonus}",
-                "damage": base["damage"] + bonus,
+                "damage": damage,
                 "durability": base["durability"] + bonus,
                 "cost": random.randint(10, 25)
             })
@@ -279,7 +336,15 @@ def create_room(floor, x, y, learned_spells):
             "name": f"Mysterious Key (Floor {floor})"
         }
     
-    enemy = create_enemy(x, y) if random.random() < 0.5 else None
+    # Enemy generation with spider swarm support
+    enemy = None
+    if random.random() < 0.5:
+        # 15% chance for spider swarm, 85% chance for regular enemy
+        if random.random() < 0.15:
+            enemy = create_spider_swarm(x, y)
+        else:
+            enemy = create_enemy(x, y)
+    
     return {
         "description": random.choice(room_descriptions),
         "type": "normal",

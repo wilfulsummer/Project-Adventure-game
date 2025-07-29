@@ -133,6 +133,12 @@ def main():
                 current_room, player_max_hp, player_hp, player_stamina, player_max_stamina, 
                 player_mana, player_max_mana)
         
+        # Shop commands
+        elif command in ["repair", "Repair"]:
+            success, new_player_money = handle_repair(current_room, inventory, armor_inventory, player_money)
+            if success:
+                player_money = new_player_money
+        
         # Add more command handlers here as needed
         else:
             print(f"Command not recognized: '{command}'")

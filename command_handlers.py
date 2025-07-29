@@ -58,7 +58,42 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                  discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells, using_fists=False):
     """Handle attack command"""
     if current_room.get("enemy"):
-        enemy = current_room["enemy"]
+        enemies = current_room["enemy"]
+        
+        # Handle single enemy (convert to list for consistency)
+        if not isinstance(enemies, list):
+            enemies = [enemies]
+        
+        # Check if all enemies are defeated
+        if not enemies:
+            print("There are no enemies here to attack.")
+            return True
+        
+        # Show enemy status
+        print(f"Enemies here: {len(enemies)}")
+        for i, enemy in enumerate(enemies):
+            if enemy["hp"] > 0:
+                print(f"  {i+1}. {enemy['name']} (HP: {enemy['hp']})")
+        
+        # Choose target
+        if len(enemies) > 1:
+            try:
+                choice = int(input(f"Which enemy do you want to attack? (1-{len(enemies)}): ")) - 1
+                if choice < 0 or choice >= len(enemies):
+                    print("Invalid choice.")
+                    return True
+            except ValueError:
+                print("Please enter a valid number.")
+                return True
+        else:
+            choice = 0
+        
+        target_enemy = enemies[choice]
+        
+        # Check if target is already defeated
+        if target_enemy["hp"] <= 0:
+            print(f"The {target_enemy['name']} is already defeated!")
+            return True
         
         # Use fists if no weapons available or if using_fists is True
         if not inventory or using_fists:
@@ -76,7 +111,7 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                 damage = int(damage * crit_multiplier)
                 print(f"*** CRITICAL HIT! *** Your fists strike true! {original_damage} → {damage} damage!")
             else:
-                print(f"You attack the {enemy['name']} with your {weapon_name} for {damage} damage!")
+                print(f"You attack the {target_enemy['name']} with your {weapon_name} for {damage} damage!")
         else:
             # Use the first weapon in inventory
             weapon = inventory[0]
@@ -114,14 +149,14 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                         # Apply spell effects
                         if spell.get("effect"):
                             if spell["effect"] in ["Burning", "Poisoned"]:
-                                enemy[spell["effect"]] = {
+                                target_enemy[spell["effect"]] = {
                                     "damage": spell["effect_damage"],
                                     "duration": spell["effect_duration"]
                                 }
-                                print(f"The {enemy['name']} is {spell['effect']}!")
+                                print(f"The {target_enemy['name']} is {spell['effect']}!")
                             elif spell["effect"] == "Stunned":
-                                enemy["Stunned"] = spell["effect_duration"]
-                                print(f"The {enemy['name']} is Stunned!")
+                                target_enemy["Stunned"] = spell["effect_duration"]
+                                print(f"The {target_enemy['name']} is Stunned!")
                     else:
                         print("Invalid choice.")
                         return True
@@ -162,12 +197,12 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                 else:
                     # Normal attack message
                     if weapon.get("requires_mana"):
-                        print(f"You attack the {enemy['name']} with your {weapon_name} for {damage} damage! (Mana used: {mana_cost})")
+                        print(f"You attack the {target_enemy['name']} with your {weapon_name} for {damage} damage! (Mana used: {mana_cost})")
                     else:
-                        print(f"You attack the {enemy['name']} with your {weapon_name} for {damage} damage!")
+                        print(f"You attack the {target_enemy['name']} with your {weapon_name} for {damage} damage!")
                 
                 # Reduce weapon durability (except for training dummy)
-                if not enemy.get("is_training_dummy"):
+                if not target_enemy.get("is_training_dummy"):
                     weapon["durability"] -= 1
                     if weapon["durability"] <= 0:
                         print(f"Your {weapon['name']} breaks!")
@@ -175,23 +210,23 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                 else:
                     print("Your weapon doesn't lose durability against the training dummy.")
         
-        # Deal damage to enemy
-        enemy["hp"] -= damage
+        # Deal damage to target enemy
+        target_enemy["hp"] -= damage
         
-        # Check if enemy is defeated
-        if enemy["hp"] <= 0:
-            if enemy.get("is_training_dummy"):
+        # Check if target enemy is defeated
+        if target_enemy["hp"] <= 0:
+            if target_enemy.get("is_training_dummy"):
                 print("Congrats! You wasted your time...")
             else:
-                print(f"You defeated the {enemy['name']}!")
+                print(f"You defeated the {target_enemy['name']}!")
             
             # Add enemy to discovered enemies and show unlock message
-            if enemy["name"] not in discovered_enemies:
-                discovered_enemies.add(enemy["name"])
-                print(f"{enemy['name']}'s File Unlocked!")
+            if target_enemy["name"] not in discovered_enemies:
+                discovered_enemies.add(target_enemy["name"])
+                print(f"{target_enemy['name']}'s File Unlocked!")
             
             # Boss drops mysterious key for current floor
-            if enemy.get("is_boss"):
+            if target_enemy.get("is_boss"):
                 if player_floor not in mysterious_keys:
                     mysterious_keys[player_floor] = True
                     print(f"The boss drops a mysterious key for Floor {player_floor}!")
@@ -199,90 +234,112 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                     print(f"The boss drops a mysterious key for Floor {player_floor}, but you already have one!")
             else:
                 # Regular enemy drops money (but not training dummy)
-                if not enemy.get("is_training_dummy"):
+                if not target_enemy.get("is_training_dummy"):
                     money_drop = random.randint(5, 15)
                     player_money += money_drop
                     print(f"You found {money_drop} gold!")
             
-            current_room["enemy"] = None
+            # Remove defeated enemy from list
+            enemies.pop(choice)
+            
+            # Check if all enemies are defeated
+            if not enemies:
+                current_room["enemy"] = None
+                print("All enemies have been defeated!")
+                return True
+            else:
+                # Update room with remaining enemies
+                current_room["enemy"] = enemies
         else:
             # Don't show HP remaining for training dummy
-            if not enemy.get("is_training_dummy"):
-                print(f"The {enemy['name']} has {enemy['hp']} HP remaining.")
-            # Enemy counter-attack (but not training dummy)
-            if not enemy.get("is_training_dummy"):
-                # Apply status effects first
-                if enemy.get("Burning"):
-                    burn_damage = enemy["Burning"]["damage"]
-                    enemy["hp"] -= burn_damage
-                    enemy["Burning"]["duration"] -= 1
-                    print(f"The {enemy['name']} takes {burn_damage} burning damage!")
-                    if enemy["Burning"]["duration"] <= 0:
-                        del enemy["Burning"]
-                        print(f"The {enemy['name']} is no longer burning.")
+            if not target_enemy.get("is_training_dummy"):
+                print(f"The {target_enemy['name']} has {target_enemy['hp']} HP remaining.")
+        
+        # Enemy counter-attacks (but not training dummy)
+        if not target_enemy.get("is_training_dummy"):
+            # Apply status effects first
+            if target_enemy.get("Burning"):
+                burn_damage = target_enemy["Burning"]["damage"]
+                target_enemy["hp"] -= burn_damage
+                target_enemy["Burning"]["duration"] -= 1
+                print(f"The {target_enemy['name']} takes {burn_damage} burning damage!")
+                if target_enemy["Burning"]["duration"] <= 0:
+                    del target_enemy["Burning"]
+                    print(f"The {target_enemy['name']} is no longer burning.")
+            
+            if target_enemy.get("Poisoned"):
+                poison_damage = target_enemy["Poisoned"]["damage"]
+                target_enemy["hp"] -= poison_damage
+                target_enemy["Poisoned"]["duration"] -= 1
+                print(f"The {target_enemy['name']} takes {poison_damage} poison damage!")
+                if target_enemy["Poisoned"]["duration"] <= 0:
+                    del target_enemy["Poisoned"]
+                    print(f"The {target_enemy['name']} is no longer poisoned.")
+            
+            # Check if enemy died from status effects
+            if target_enemy["hp"] <= 0:
+                print(f"The {target_enemy['name']} dies from the effects!")
+                if target_enemy["name"] not in discovered_enemies:
+                    discovered_enemies.add(target_enemy["name"])
+                    print(f"{target_enemy['name']}'s File Unlocked!")
+                if not target_enemy.get("is_training_dummy"):
+                    money_drop = random.randint(5, 15)
+                    player_money += money_drop
+                    print(f"You found {money_drop} gold!")
                 
-                if enemy.get("Poisoned"):
-                    poison_damage = enemy["Poisoned"]["damage"]
-                    enemy["hp"] -= poison_damage
-                    enemy["Poisoned"]["duration"] -= 1
-                    print(f"The {enemy['name']} takes {poison_damage} poison damage!")
-                    if enemy["Poisoned"]["duration"] <= 0:
-                        del enemy["Poisoned"]
-                        print(f"The {enemy['name']} is no longer poisoned.")
+                # Remove defeated enemy from list
+                enemies.pop(choice)
                 
-                # Check if enemy died from status effects
-                if enemy["hp"] <= 0:
-                    print(f"The {enemy['name']} dies from the effects!")
-                    if enemy["name"] not in discovered_enemies:
-                        discovered_enemies.add(enemy["name"])
-                        print(f"{enemy['name']}'s File Unlocked!")
-                    if not enemy.get("is_training_dummy"):
-                        money_drop = random.randint(5, 15)
-                        player_money += money_drop
-                        print(f"You found {money_drop} gold!")
+                # Check if all enemies are defeated
+                if not enemies:
                     current_room["enemy"] = None
+                    print("All enemies have been defeated!")
                     return True
-                
-                # Enemy attack (unless stunned)
-                if enemy.get("Stunned"):
-                    print(f"The {enemy['name']} is stunned and can't attack!")
-                    enemy["Stunned"] -= 1
-                    if enemy["Stunned"] <= 0:
-                        del enemy["Stunned"]
                 else:
-                    # Handle extra turns for enemies (like rats)
-                    extra_turns = enemy.get("extra_turns", 1)
-                    
-                    for turn in range(extra_turns):
-                        enemy_damage = enemy["base_attack"]
-                        if equipped_armor:
-                            # Balanced flat damage reduction: defense divided by 2 (rounded down)
-                            damage_reduction = equipped_armor["defense"] // 2
-                            # Apply armor piercing: enemies can ignore some armor
-                            armor_pierce = enemy.get("armor_pierce", 0)
-                            effective_reduction = max(0, damage_reduction - armor_pierce)
-                            enemy_damage = max(1, enemy_damage - effective_reduction)
-                            # Reduce armor durability
-                            equipped_armor["durability"] -= 1
-                            if equipped_armor["durability"] <= 0:
-                                print(f"Your {equipped_armor['name']} breaks!")
-                                equipped_armor = None
-                        
-                        player_hp -= enemy_damage
-                        
-                        # Show different messages for extra turns
-                        if extra_turns > 1 and turn > 0:
-                            print(f"The {enemy['name']} attacks again for {enemy_damage} damage!")
-                        else:
-                            print(f"The {enemy['name']} attacks you for {enemy_damage} damage!")
-                        
-                        print(f"You have {player_hp} HP remaining.")
-                        
-                        if player_hp <= 0:
-                            print("You have been defeated!")
-                            return False
+                    # Update room with remaining enemies
+                    current_room["enemy"] = enemies
+                return True
+            
+            # Enemy attack (unless stunned)
+            if target_enemy.get("Stunned"):
+                print(f"The {target_enemy['name']} is stunned and can't attack!")
+                target_enemy["Stunned"] -= 1
+                if target_enemy["Stunned"] <= 0:
+                    del target_enemy["Stunned"]
             else:
-                print("The training dummy doesn't fight back.")
+                # Handle extra turns for enemies (like rats)
+                extra_turns = target_enemy.get("extra_turns", 1)
+                
+                for turn in range(extra_turns):
+                    enemy_damage = target_enemy["base_attack"]
+                    if equipped_armor:
+                        # Balanced flat damage reduction: defense divided by 2 (rounded down)
+                        damage_reduction = equipped_armor["defense"] // 2
+                        # Apply armor piercing: enemies can ignore some armor
+                        armor_pierce = target_enemy.get("armor_pierce", 0)
+                        effective_reduction = max(0, damage_reduction - armor_pierce)
+                        enemy_damage = max(1, enemy_damage - effective_reduction)
+                        # Reduce armor durability
+                        equipped_armor["durability"] -= 1
+                        if equipped_armor["durability"] <= 0:
+                            print(f"Your {equipped_armor['name']} breaks!")
+                            equipped_armor = None
+                    
+                    player_hp -= enemy_damage
+                    
+                    # Show different messages for extra turns
+                    if extra_turns > 1 and turn > 0:
+                        print(f"The {target_enemy['name']} attacks again for {enemy_damage} damage!")
+                    else:
+                        print(f"The {target_enemy['name']} attacks you for {enemy_damage} damage!")
+                    
+                    print(f"You have {player_hp} HP remaining.")
+                    
+                    if player_hp <= 0:
+                        print("You have been defeated!")
+                        return False # Player defeated, break out of loop and return False
+        else:
+            print("The training dummy doesn't fight back.")
     else:
         print("There's no enemy here to attack.")
     return True
@@ -582,4 +639,133 @@ def handle_run(current_room, player_stamina, player_x, player_y):
     else:
         print("There's no enemy here to run away from.")
     
-    return player_stamina, player_x, player_y 
+    return player_stamina, player_x, player_y
+
+def handle_repair(current_room, inventory, armor_inventory, player_money):
+    """Handle repair command at shops"""
+    if not current_room.get("shop"):
+        print("You can only repair items at shops.")
+        return True, player_money
+    
+    print("What would you like to repair?")
+    print("  1. Weapons")
+    print("  2. Armor")
+    
+    try:
+        choice = int(input("Enter number: "))
+        
+        if choice == 1:
+            # Repair weapons
+            if not inventory:
+                print("You have no weapons to repair.")
+                return True, player_money
+            
+            print("Which weapon do you want to repair?")
+            for i, weapon in enumerate(inventory):
+                if weapon.get("name") == "Spell Book":
+                    print(f"  {i+1}. {weapon['name']} (Durability: {weapon['durability']})")
+                elif weapon.get("requires_mana"):
+                    print(f"  {i+1}. {weapon['name']} (Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)})")
+                else:
+                    print(f"  {i+1}. {weapon['name']} (Durability: {weapon['durability']})")
+            
+            try:
+                weapon_choice = int(input("Enter number: ")) - 1
+                if 0 <= weapon_choice < len(inventory):
+                    weapon = inventory[weapon_choice]
+                    
+                    # Calculate repair cost based on weapon power
+                    if weapon.get("name") == "Spell Book":
+                        # Spell books have high base cost due to their utility
+                        base_cost = 3
+                    else:
+                        # Calculate cost based on damage
+                        damage = weapon.get("damage", 5)
+                        base_cost = max(1, damage // 4)  # 1 gold per 4 damage, minimum 1
+                    
+                    # Calculate how much durability needs to be restored
+                    max_durability = weapon.get("max_durability", weapon["durability"] + 5)  # Use actual max durability
+                    durability_needed = max_durability - weapon["durability"]
+                    
+                    if durability_needed <= 0:
+                        print(f"Your {weapon['name']} is already at full durability!")
+                        return True, player_money
+                    
+                    total_cost = base_cost * durability_needed
+                    
+                    print(f"Repairing {weapon['name']} will cost {total_cost} gold ({base_cost} gold per durability point).")
+                    print(f"Current durability: {weapon['durability']}, Max durability: {max_durability}")
+                    
+                    if player_money < total_cost:
+                        print(f"You need {total_cost} gold, but you only have {player_money} gold.")
+                        return True, player_money
+                    
+                    confirm = input("Proceed with repair? (y/n): ").lower()
+                    if confirm == 'y':
+                        player_money -= total_cost
+                        weapon["durability"] = max_durability
+                        print(f"Your {weapon['name']} has been repaired to full durability!")
+                        print(f"Gold remaining: {player_money}")
+                    else:
+                        print("Repair cancelled.")
+                else:
+                    print("Invalid choice.")
+            except ValueError:
+                print("Please enter a valid number.")
+        
+        elif choice == 2:
+            # Repair armor
+            if not armor_inventory:
+                print("You have no armor to repair.")
+                return True, player_money
+            
+            print("Which armor do you want to repair?")
+            for i, armor in enumerate(armor_inventory):
+                print(f"  {i+1}. {armor['name']} (Durability: {armor['durability']})")
+            
+            try:
+                armor_choice = int(input("Enter number: ")) - 1
+                if 0 <= armor_choice < len(armor_inventory):
+                    armor = armor_inventory[armor_choice]
+                    
+                    # Calculate repair cost based on armor defense
+                    defense = armor.get("defense", 3)
+                    base_cost = max(1, defense // 3)  # 1 gold per 3 defense, minimum 1
+                    
+                    # Calculate how much durability needs to be restored
+                    max_durability = armor.get("max_durability", armor["durability"] + 10)  # Use actual max durability
+                    durability_needed = max_durability - armor["durability"]
+                    
+                    if durability_needed <= 0:
+                        print(f"Your {armor['name']} is already at full durability!")
+                        return True, player_money
+                    
+                    total_cost = base_cost * durability_needed
+                    
+                    print(f"Repairing {armor['name']} will cost {total_cost} gold ({base_cost} gold per durability point).")
+                    print(f"Current durability: {armor['durability']}, Max durability: {max_durability}")
+                    
+                    if player_money < total_cost:
+                        print(f"You need {total_cost} gold, but you only have {player_money} gold.")
+                        return True, player_money
+                    
+                    confirm = input("Proceed with repair? (y/n): ").lower()
+                    if confirm == 'y':
+                        player_money -= total_cost
+                        armor["durability"] = max_durability
+                        print(f"Your {armor['name']} has been repaired to full durability!")
+                        print(f"Gold remaining: {player_money}")
+                    else:
+                        print("Repair cancelled.")
+                else:
+                    print("Invalid choice.")
+            except ValueError:
+                print("Please enter a valid number.")
+        
+        else:
+            print("Invalid choice.")
+    
+    except ValueError:
+        print("Please enter a valid number.")
+    
+    return True, player_money 

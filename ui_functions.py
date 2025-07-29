@@ -70,17 +70,39 @@ def show_room(room, player_floor, player_x, player_y, inventory, player_hp, play
                 print("The stairwell is locked. You need a mysterious key for this floor to proceed.")
 
     if room.get("enemy"):
-        e = room["enemy"]
-        tag = " [BOSS]" if e.get("is_boss") else ""
-        if e.get("is_training_dummy"):
-            tag = " [TRAINING]"
-            # Show ??? for training dummy HP until defeated
-            if "Training Dummy" not in discovered_enemies:
-                print(f"Enemy here: {e['name']}{tag} (HP: ???)")
+        enemies = room["enemy"]
+        
+        # Handle single enemy (convert to list for consistency)
+        if not isinstance(enemies, list):
+            enemies = [enemies]
+        
+        # Display multiple enemies
+        if len(enemies) == 1:
+            e = enemies[0]
+            tag = " [BOSS]" if e.get("is_boss") else ""
+            if e.get("is_training_dummy"):
+                tag = " [TRAINING]"
+                # Show ??? for training dummy HP until defeated
+                if "Training Dummy" not in discovered_enemies:
+                    print(f"Enemy here: {e['name']}{tag} (HP: ???)")
+                else:
+                    print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
             else:
                 print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
         else:
-            print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
+            # Multiple enemies (swarm)
+            print(f"Enemies here: {len(enemies)}")
+            for i, e in enumerate(enemies):
+                if e["hp"] > 0:  # Only show living enemies
+                    tag = " [BOSS]" if e.get("is_boss") else ""
+                    if e.get("is_training_dummy"):
+                        tag = " [TRAINING]"
+                        if "Training Dummy" not in discovered_enemies:
+                            print(f"  {i+1}. {e['name']}{tag} (HP: ???)")
+                        else:
+                            print(f"  {i+1}. {e['name']}{tag} (HP: {e['hp']})")
+                    else:
+                        print(f"  {i+1}. {e['name']}{tag} (HP: {e['hp']})")
 
     if room.get("weapons"):
         print("Weapons here:")
@@ -162,6 +184,8 @@ def show_bestiary(discovered_enemies):
                 health_desc = "Very Low Health, Double Attacks"
             elif enemy_name == "Orc":
                 health_desc = "High Health, Tough Opponent"
+            elif enemy_name == "Spider":
+                health_desc = "Very Low Health, Swarm Enemy"
             
             print(f"  🐺 {enemy_name}: {base_hp} HP - {health_desc}")
         elif enemy_name == "Training Dummy":
@@ -177,6 +201,7 @@ def show_bestiary(discovered_enemies):
     print("  - Hungry Wolves: Kill quickly due to high attack potential")
     print("  - Orcs: Tough opponents, use your best weapons")
     print("  - Rats: Attack twice per turn but deal reduced damage")
+    print("  - Spiders: Attack in swarms of 2-4, very low damage")
     
     print("==================")
 
@@ -235,6 +260,7 @@ def show_items_help():
     print("  inventory - Show your weapons")
     print("  armor - Show your armor")
     print("  use_scroll - Learn spells from scrolls")
+    print("  repair - Repair weapons and armor at shops")
     print("\nItem Tips:")
     print("  - Weapons and armor have durability that decreases with use")
     print("  - Items and enemies scale with distance from (0,0) but cap at 100 rooms away")
@@ -243,6 +269,7 @@ def show_items_help():
     print("  - Use 'inventory' to see your weapons and 'armor' to see armor")
     print("  - Spell Books can cast learned spells (buy scrolls from shops)")
     print("  - Use 'switch' to select fists (option 0) if you have no spells for Spell Book")
+    print("  - Use 'repair' at shops to restore durability to weapons and armor")
     print("==================")
 
 def show_resources_help():
@@ -270,6 +297,7 @@ def show_progression_help():
     print("  open - Open a chest")
     print("  loot - Loot treasure chambers")
     print("  buy - Buy from a shop")
+    print("  repair - Repair weapons and armor at shops")
     print("\nProgression Tips:")
     print("  - Mysterious keys are floor-specific and unlock stairwells permanently")
     print("  - Bosses drop mysterious keys for their specific floor")
@@ -277,6 +305,7 @@ def show_progression_help():
     print("  - Golden keys can be bought from shops for 50 gold")
     print("  - Treasure chambers contain gold, potions, and mysterious keys")
     print("  - Stairwell rooms (1 in 25) require mysterious keys to descend")
+    print("  - Repair costs scale with item power (damage/defense)")
     print("==================")
 
 def show_utility_help():
@@ -308,11 +337,11 @@ def show_all_help():
     print("Movement:")
     print("  north/south/east/west, descend")
     print("Items:")
-    print("  take, drop, drop_armor, switch, equip, inventory, armor, use_scroll")
+    print("  take, drop, drop_armor, switch, equip, inventory, armor, use_scroll, repair")
     print("Resources:")
     print("  absorb, use")
     print("Progression:")
-    print("  take_key, drop_mysterious_key, open, loot, buy")
+    print("  take_key, drop_mysterious_key, open, loot, buy, repair")
     print("Utility:")
     print("  map, waypoint, view, delete, teleport, bestiary, save, load, guide, quit")
     print("==================") 
