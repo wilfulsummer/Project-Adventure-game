@@ -1,0 +1,314 @@
+import random
+from constants import weapon_names, enemy_stats, spells
+
+def distance_from_start(x, y):
+    return abs(x) + abs(y)
+
+def create_weapon(x, y):
+    base_damage = random.randint(5, 10)
+    base_durability = random.randint(5, 15)
+    distance = distance_from_start(x, y)
+    # Cap scaling at 100 rooms away from (0,0)
+    capped_distance = min(distance, 100)
+    # Adjust scaling to cap at ~25 damage and ~40 durability
+    scaled = capped_distance // 4  # Reduced from // 2
+    damage_bonus = scaled * random.randint(1, 2)
+    durability_bonus = scaled * random.randint(1, 2)
+    weapon_name = random.choice(weapon_names)
+    
+    # Make staffs stronger but require mana
+    if weapon_name == "Magic Staff":
+        damage = base_damage + damage_bonus + random.randint(1, 2)  # +1 to +2 extra damage
+        return {
+            "name": weapon_name,
+            "damage": damage,
+            "durability": base_durability + durability_bonus,
+            "requires_mana": True,
+            "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
+        }
+    elif weapon_name == "Spell Book":
+        durability = random.randint(15, 25) + durability_bonus
+        return {
+            "name": weapon_name,
+            "damage": "???",
+            "durability": durability
+        }
+    else:
+        return {
+            "name": weapon_name,
+            "damage": base_damage + damage_bonus,
+            "durability": base_durability + durability_bonus
+        }
+
+def create_armor(x, y):
+    base_defense = random.randint(2, 4)  # Reduced from 5-8 to 2-4
+    base_durability = random.randint(8, 15)
+    distance = distance_from_start(x, y)
+    # Cap scaling at 100 rooms away from (0,0)
+    capped_distance = min(distance, 100)
+    scaled = capped_distance // 4  # Reduced scaling from //2 to //4
+    return {
+        "name": random.choice(["Leather Armor", "Iron Mail", "Bone Plate", "Troll Hide"]),
+        "defense": base_defense + scaled * random.choice([0, 1]),
+        "durability": base_durability + scaled * random.choice([0, 1])
+    }
+
+def create_chest_weapon(dist):
+    base_damage = random.randint(5, 10)
+    base_durability = random.randint(5, 15)
+    # Cap scaling at 100 rooms away from (0,0)
+    capped_dist = min(dist, 100)
+    # Adjust scaling to cap at ~25 damage and ~40 durability
+    scaled = capped_dist // 4  # Reduced from // 2
+    damage_bonus = scaled * random.randint(1, 2)
+    durability_bonus = scaled * random.randint(1, 2)
+    weapon_name = random.choice(weapon_names)
+    
+    # Make staffs stronger but require mana
+    if weapon_name == "Magic Staff":
+        damage = base_damage + damage_bonus + random.randint(1, 2)  # +1 to +2 extra damage
+        return {
+            "name": weapon_name,
+            "damage": damage,
+            "durability": base_durability + durability_bonus,
+            "requires_mana": True,
+            "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
+        }
+    elif weapon_name == "Spell Book":
+        durability = random.randint(15, 25) + durability_bonus
+        return {
+            "name": weapon_name,
+            "damage": "???",
+            "durability": durability
+        }
+    else:
+        return {
+            "name": weapon_name,
+            "damage": base_damage + damage_bonus,
+            "durability": base_durability + durability_bonus
+        }
+
+def create_chest_armor(x, y):
+    dist = distance_from_start(x, y) + random.randint(3, 5)
+    # Cap scaling at 100 rooms away from (0,0)
+    capped_dist = min(dist, 100)
+    scaled = capped_dist // 4  # Reduced scaling from //2 to //4
+    base_defense = random.randint(3, 6)  # Reduced from 5-8 to 3-6
+    base_durability = random.randint(8, 15)
+    bonus_def = scaled * random.choice([1, 2])
+    bonus_dur = scaled * random.choice([1, 2])
+    return {
+        "name": random.choice(["Enchanted Mail", "Reinforced Hide", "Darksteel Vest", "Trollbone Harness"]),
+        "defense": base_defense + bonus_def,
+        "durability": base_durability + bonus_dur
+    }
+
+def create_enemy(x, y, force_boss=None):
+    dist = distance_from_start(x, y)
+    # Cap scaling at 100 rooms away from (0,0)
+    capped_dist = min(dist, 100)
+    # Adjust scaling to be more balanced (reduced from // 2)
+    scaled = capped_dist // 4
+
+    if force_boss == "Troll":
+        base_hp = 60
+        variation = random.randint(-3, 3)
+        return {
+            "name": "Troll",
+            "hp": base_hp + variation + scaled * random.randint(1, 2),
+            "base_attack": 10 + scaled,
+            "armor_pierce": 2 + scaled // 3,  # Bosses have more armor piercing, scales with distance from (0,0)
+            "is_boss": True
+        }
+
+    name = random.choice(list(enemy_stats.keys()))
+    base_hp = enemy_stats[name]
+    variation = random.randint(-3, 3)
+    return {
+        "name": name,
+        "hp": base_hp + variation + scaled * random.randint(1, 2),
+        "base_attack": 5 + scaled,
+        "armor_pierce": 1 + scaled // 6,  # Regular enemies have some armor piercing, scales with distance from (0,0)
+        "is_boss": False
+    }
+
+def create_room(floor, x, y, learned_spells):
+    from constants import room_descriptions
+    
+    # Stairwell room (1 in 25) - requires mysterious key
+    if random.randint(1, 25) == 1:
+        return {
+            "description": "You find a mysterious stairwell leading deeper into the dungeon...",
+            "type": "stairwell",
+            "enemy": None,
+            "weapons": [],
+            "armors": [],
+            "shop": None,
+            "chest": None,
+            "life_crystal": False,
+            "requires_mysterious_key": True
+        }
+
+    # Golden key door room (1 in 25)
+    if random.randint(1, 25) == 1:
+        return {
+            "description": "You find a glowing golden door… and the Troll guarding it!",
+            "type": "key_door",
+            "key_required": True,
+            "enemy": create_enemy(x, y, force_boss="Troll"),
+            "weapons": [],
+            "armors": [],
+            "shop": None,
+            "chest": None,
+            "life_crystal": False,
+            "treasure_room": True  # Indicates there's a treasure room behind this boss
+        }
+
+    # Chest room (1 in 15)
+    if random.randint(1, 15) == 1:
+        loot = {
+            "weapons": [create_chest_weapon(distance_from_start(x, y) + random.randint(3, 5))],
+            "potions": 2,
+            "locked": True,
+            "life_crystal": random.random() < 0.2,
+            "armor": create_chest_armor(x, y) if random.random() < 0.5 else None
+        }
+        if random.random() < 0.3:
+            loot["weapons"].append(create_chest_weapon(distance_from_start(x, y) + random.randint(3, 5)))
+        return {
+            "description": "You find an old stone chamber with a heavy locked chest.",
+            "type": "chest",
+            "chest": loot,
+            "enemy": None,
+            "weapons": [],
+            "armors": [],
+            "shop": None,
+            "life_crystal": False
+        }
+
+    # Shop (10% chance)
+    if random.random() < 0.1:
+        items = []
+        for _ in range(random.randint(0, 2)):
+            base = create_weapon(x, y)
+            bonus = random.randint(1, 3)
+            items.append({
+                "name": f"{base['name']}+{bonus}",
+                "damage": base["damage"] + bonus,
+                "durability": base["durability"] + bonus,
+                "cost": random.randint(10, 25)
+            })
+        
+        # Generate spell scrolls (40% chance, then 30% chance for 2 different spells)
+        spell_scrolls_shop = {}
+        if random.random() < 0.4:
+            available_spells = [spell for spell in spells.keys() if spell not in learned_spells]
+            if available_spells:
+                spell1 = random.choice(available_spells)
+                spell_scrolls_shop[spell1] = 1
+                if random.random() < 0.3 and len(available_spells) > 1:
+                    spell2 = random.choice([s for s in available_spells if s != spell1])
+                    spell_scrolls_shop[spell2] = 1
+        
+        shop = {
+            "items": items,
+            "potion_price": random.randint(8, 15),
+            "stamina_potion_price": random.randint(6, 12),
+            "mana_potion_price": random.randint(15, 20),
+            "has_key": random.random() < 0.4,
+            "armor": create_armor(x, y) if random.random() < 0.35 else None,
+            "life_crystal": random.random() < 0.1,
+            "stamina_potions": random.randint(1, 2) if random.random() < 0.6 else 0,
+            "mana_potions": random.randint(1, 2) if random.random() < 0.6 else 0,
+            "waypoint_scrolls": random.randint(1, 2) if random.random() < 0.3 else 0,
+            "spell_scrolls": spell_scrolls_shop
+        }
+        return {
+            "description": "A cozy shop with items for sale.",
+            "type": "shop",
+            "shop": shop,
+            "enemy": None,
+            "weapons": [],
+            "armors": [],
+            "chest": None,
+            "life_crystal": False
+        }
+
+    # Crystal room (5% chance) - can have life, stamina, or mana crystal, or combinations
+    crystal_type = None
+    if random.random() < 0.05:
+        crystal_roll = random.random()
+        if crystal_roll < 0.04:  # 2% chance for dual crystals
+            if random.random() < 0.5:
+                crystal_type = "life_stamina"  # Life + Stamina
+            else:
+                crystal_type = "life_mana"  # Life + Mana
+        elif crystal_roll < 0.06:  # 1% chance for triple crystals
+            crystal_type = "all"  # All three crystals
+        else:
+            # Single crystal (2% chance)
+            crystal_choice = random.random()
+            if crystal_choice < 0.33:
+                crystal_type = "life"
+            elif crystal_choice < 0.67:
+                crystal_type = "stamina"
+            else:
+                crystal_type = "mana"
+    
+    weapons = []
+    if random.random() < 0.3:
+        weapons.append(create_weapon(x, y))
+    armors = []
+    if random.random() < 0.2:
+        armors.append(create_armor(x, y))
+    
+    # Mysterious key (1 in 50 chance)
+    mysterious_key_item = None
+    if random.randint(1, 50) == 1:
+        mysterious_key_item = {
+            "floor": floor,
+            "name": f"Mysterious Key (Floor {floor})"
+        }
+    
+    enemy = create_enemy(x, y) if random.random() < 0.5 else None
+    return {
+        "description": random.choice(room_descriptions),
+        "type": "normal",
+        "enemy": enemy,
+        "weapons": weapons,
+        "armors": armors,
+        "shop": None,
+        "chest": None,
+        "crystal_type": crystal_type,
+        "mysterious_key": mysterious_key_item
+    }
+
+def get_room(floor, x, y, worlds, learned_spells):
+    if floor not in worlds:
+        worlds[floor] = {}
+    
+    if (x, y) not in worlds[floor]:
+        if floor == 0 and x == 0 and y == 0:
+            worlds[floor][(x, y)] = {
+                "description": "You are in a clearing with a training dummy.",
+                "type": "normal",
+                "enemy": {
+                    "name": "Training Dummy",
+                    "hp": 999,  # Very high HP so it doesn't die
+                    "base_attack": 0,  # No damage
+                    "is_boss": False,
+                    "is_training_dummy": True  # Special flag for training dummy
+                },
+                "weapons": [{
+                    "name": "Rusty Sword",
+                    "damage": 5,
+                    "durability": 10
+                }],
+                "armors": [],
+                "shop": None,
+                "chest": None,
+                "crystal_type": None
+            }
+        else:
+            worlds[floor][(x, y)] = create_room(floor, x, y, learned_spells)
+    return worlds[floor][(x, y)] 

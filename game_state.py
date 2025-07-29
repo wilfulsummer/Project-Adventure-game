@@ -1,0 +1,26 @@
+# --- Game State ---
+worlds = {}  # Dictionary of floors: {floor: world}
+player_floor = 0
+player_x = 0
+player_y = 0
+inventory = []
+armor_inventory = []
+equipped_armor = None
+player_hp = 50
+player_max_hp = 50
+player_stamina = 20
+player_max_stamina = 20
+player_mana = 20
+player_max_mana = 20
+player_money = 0
+player_potions = 0
+stamina_potions = 0
+mana_potions = 0
+waypoint_scrolls = 0  # Can hold up to 3 waypoint scrolls
+mysterious_keys = {}  # Dictionary of floor-specific mysterious keys: {floor: True}
+golden_keys = 0  # Can hold up to 3 golden keys
+unlocked_floors = set()  # Set of floors that can be accessed with mysterious keys
+waypoints = {}  # Dictionary to store waypoints: {name: (floor, x, y)}
+discovered_enemies = set()  # Track which enemies have been defeated
+learned_spells = []  # List of learned spells in order
+spell_scrolls = {}  # Dictionary of spell scrolls: {spell_name: count} 
