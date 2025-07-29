@@ -10,25 +10,49 @@ def handle_movement(command, current_room, player_floor, player_x, player_y, wor
             enemy = current_room["enemy"]
             if enemy.get("is_boss"):
                 print(f"The {enemy['name']} is too powerful! You manage to escape!")
-                if command == "north": player_y += 1
-                elif command == "south": player_y -= 1
-                elif command == "east": player_x += 1
-                elif command == "west": player_x -= 1
+                if command == "north": 
+                    player_y += 1
+                    return True, player_x, player_y
+                elif command == "south": 
+                    player_y -= 1
+                    return True, player_x, player_y
+                elif command == "east": 
+                    player_x += 1
+                    return True, player_x, player_y
+                elif command == "west": 
+                    player_x -= 1
+                    return True, player_x, player_y
             elif enemy.get("is_training_dummy"):
                 print(f"You can move freely past the {enemy['name']}.")
-                if command == "north": player_y += 1
-                elif command == "south": player_y -= 1
-                elif command == "east": player_x += 1
-                elif command == "west": player_x -= 1
+                if command == "north": 
+                    player_y += 1
+                    return True, player_x, player_y
+                elif command == "south": 
+                    player_y -= 1
+                    return True, player_x, player_y
+                elif command == "east": 
+                    player_x += 1
+                    return True, player_x, player_y
+                elif command == "west": 
+                    player_x -= 1
+                    return True, player_x, player_y
             else:
                 print(f"You can't leave! The {enemy['name']} blocks your way!")
+                return False, player_x, player_y
         else:
-            if command == "north": player_y += 1
-            elif command == "south": player_y -= 1
-            elif command == "east": player_x += 1
-            elif command == "west": player_x -= 1
-        return True
-    return False
+            if command == "north": 
+                player_y += 1
+                return True, player_x, player_y
+            elif command == "south": 
+                player_y -= 1
+                return True, player_x, player_y
+            elif command == "east": 
+                player_x += 1
+                return True, player_x, player_y
+            elif command == "west": 
+                player_x -= 1
+                return True, player_x, player_y
+    return False, player_x, player_y
 
 def handle_attack(current_room, inventory, player_mana, equipped_armor, player_hp, 
                  discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells):
@@ -226,27 +250,37 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                     if enemy["Stunned"] <= 0:
                         del enemy["Stunned"]
                 else:
-                    enemy_damage = enemy["base_attack"]
-                    if equipped_armor:
-                        # Balanced flat damage reduction: defense divided by 2 (rounded down)
-                        damage_reduction = equipped_armor["defense"] // 2
-                        # Apply armor piercing: enemies can ignore some armor
-                        armor_pierce = enemy.get("armor_pierce", 0)
-                        effective_reduction = max(0, damage_reduction - armor_pierce)
-                        enemy_damage = max(1, enemy_damage - effective_reduction)
-                        # Reduce armor durability
-                        equipped_armor["durability"] -= 1
-                        if equipped_armor["durability"] <= 0:
-                            print(f"Your {equipped_armor['name']} breaks!")
-                            equipped_armor = None
+                    # Handle extra turns for enemies (like rats)
+                    extra_turns = enemy.get("extra_turns", 1)
                     
-                    player_hp -= enemy_damage
-                    print(f"The {enemy['name']} attacks you for {enemy_damage} damage!")
-                    print(f"You have {player_hp} HP remaining.")
-                    
-                    if player_hp <= 0:
-                        print("You have been defeated!")
-                        return False
+                    for turn in range(extra_turns):
+                        enemy_damage = enemy["base_attack"]
+                        if equipped_armor:
+                            # Balanced flat damage reduction: defense divided by 2 (rounded down)
+                            damage_reduction = equipped_armor["defense"] // 2
+                            # Apply armor piercing: enemies can ignore some armor
+                            armor_pierce = enemy.get("armor_pierce", 0)
+                            effective_reduction = max(0, damage_reduction - armor_pierce)
+                            enemy_damage = max(1, enemy_damage - effective_reduction)
+                            # Reduce armor durability
+                            equipped_armor["durability"] -= 1
+                            if equipped_armor["durability"] <= 0:
+                                print(f"Your {equipped_armor['name']} breaks!")
+                                equipped_armor = None
+                        
+                        player_hp -= enemy_damage
+                        
+                        # Show different messages for extra turns
+                        if extra_turns > 1 and turn > 0:
+                            print(f"The {enemy['name']} attacks again for {enemy_damage} damage!")
+                        else:
+                            print(f"The {enemy['name']} attacks you for {enemy_damage} damage!")
+                        
+                        print(f"You have {player_hp} HP remaining.")
+                        
+                        if player_hp <= 0:
+                            print("You have been defeated!")
+                            return False
             else:
                 print("The training dummy doesn't fight back.")
     else:

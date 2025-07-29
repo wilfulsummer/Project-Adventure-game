@@ -124,13 +124,22 @@ def create_enemy(x, y, force_boss=None):
     name = random.choice(list(enemy_stats.keys()))
     base_hp = enemy_stats[name]
     variation = random.randint(-3, 3)
-    return {
+    
+    # Create enemy with base stats
+    enemy = {
         "name": name,
         "hp": base_hp + variation + scaled * random.randint(1, 2),
         "base_attack": 5 + scaled,
         "armor_pierce": 1 + scaled // 6,  # Regular enemies have some armor piercing, scales with distance from (0,0)
         "is_boss": False
     }
+    
+    # Special handling for rats: reduce damage by 30% and give extra turns
+    if name == "Rat":
+        enemy["base_attack"] = int(enemy["base_attack"] * 0.7)  # 30% damage reduction
+        enemy["extra_turns"] = 2  # Rats get 2 turns (double turns)
+    
+    return enemy
 
 def create_room(floor, x, y, learned_spells):
     from constants import room_descriptions

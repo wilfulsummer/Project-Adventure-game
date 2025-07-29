@@ -159,7 +159,7 @@ def show_bestiary(discovered_enemies):
             if enemy_name == "Hungry Wolf":
                 health_desc = "Low Health, High Attack"
             elif enemy_name == "Rat":
-                health_desc = "Very Low Health, Easy Target"
+                health_desc = "Very Low Health, Double Attacks"
             elif enemy_name == "Orc":
                 health_desc = "High Health, Tough Opponent"
             
@@ -176,7 +176,7 @@ def show_bestiary(discovered_enemies):
     print("  - Regular enemies block your path until defeated")
     print("  - Hungry Wolves: Kill quickly due to high attack potential")
     print("  - Orcs: Tough opponents, use your best weapons")
-    print("  - Rats: Easy targets, good for farming gold")
+    print("  - Rats: Attack twice per turn but deal reduced damage")
     
     print("==================")
 
@@ -207,7 +207,7 @@ def show_combat_help():
     print("  - Regular enemies block your path until defeated")
     print("  - Hungry Wolves: Kill quickly due to high attack potential")
     print("  - Orcs: Tough opponents, use your best weapons")
-    print("  - Rats: Easy targets, good for farming gold")
+    print("  - Rats: Attack twice per turn but deal reduced damage")
     print("==================")
 
 def show_movement_help():
