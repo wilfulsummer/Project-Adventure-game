@@ -55,13 +55,13 @@ def handle_movement(command, current_room, player_floor, player_x, player_y, wor
     return False, player_x, player_y
 
 def handle_attack(current_room, inventory, player_mana, equipped_armor, player_hp, 
-                 discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells):
+                 discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells, using_fists=False):
     """Handle attack command"""
     if current_room.get("enemy"):
         enemy = current_room["enemy"]
         
-        # Use fists if no weapons available, otherwise use first weapon
-        if not inventory:
+        # Use fists if no weapons available or if using_fists is True
+        if not inventory or using_fists:
             # Use fists (3 damage, infinite durability)
             damage = 3
             weapon_name = "fists"
@@ -359,8 +359,9 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
             print("Please enter a valid number.")
     return True
 
-def handle_inventory(inventory):
+def handle_inventory(inventory, using_fists=False):
     """Handle inventory command"""
+    
     if inventory:
         print("\nYour weapons:")
         for i, weapon in enumerate(inventory):
@@ -370,6 +371,12 @@ def handle_inventory(inventory):
                 print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)})")
             else:
                 print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']})")
+    
+    # Show current weapon status
+    if using_fists:
+        print("Currently using: Fists (Damage: 3, Durability: Infinite)")
+    elif inventory:
+        print(f"Currently using: {inventory[0]['name']}")
     else:
         print("You have no weapons.")
         print("Currently using: Fists (Damage: 3, Durability: Infinite)")
@@ -489,7 +496,7 @@ def handle_switch(inventory):
     try:
         choice = int(input("Enter number: ")) - 1
         if choice == -1:
-            # Switch to fists - move all weapons to inventory
+            # Switch to fists
             if inventory:
                 print("You switch to using your fists.")
                 # Move current weapon to back of inventory
@@ -498,16 +505,19 @@ def handle_switch(inventory):
                     inventory.append(weapon)
             else:
                 print("You're already using your fists.")
+            return True, True  # Return success and using_fists=True
         elif 0 <= choice < len(inventory):
+            # Switch to weapon
             # Move selected weapon to front of inventory
             weapon = inventory.pop(choice)
             inventory.insert(0, weapon)
             print(f"You switched to {weapon['name']}.")
+            return True, False  # Return success and using_fists=False
         else:
             print("Invalid choice.")
     except ValueError:
         print("Please enter a valid number.")
-    return True
+    return True, False  # Return success and using_fists=False (default)
 
 def handle_absorb(current_room, player_max_hp, player_hp, player_stamina, player_max_stamina, 
                  player_mana, player_max_mana):

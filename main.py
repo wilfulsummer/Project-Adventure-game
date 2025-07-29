@@ -12,7 +12,7 @@ def main():
     global player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana
     global player_money, player_potions, stamina_potions, mana_potions, waypoint_scrolls
     global mysterious_keys, golden_keys, unlocked_floors, waypoints, discovered_enemies
-    global learned_spells, spell_scrolls
+    global learned_spells, spell_scrolls, using_fists
 
     print("Welcome to the Adventure Game!")
     print("Type 'guide' to see available info on how to play!")
@@ -53,7 +53,7 @@ def main():
             save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                      player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                      player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls)
+                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
         elif command == "load":
             loaded_data = load_game()
             if loaded_data:
@@ -86,13 +86,16 @@ def main():
             show_bestiary(discovered_enemies)
         
         # Movement commands
-        elif handle_movement(command, current_room, player_floor, player_x, player_y, worlds, learned_spells):
-            pass  # Movement handled by the function
+        elif command in ["north", "south", "east", "west"]:
+            success, new_x, new_y = handle_movement(command, current_room, player_floor, player_x, player_y, worlds, learned_spells)
+            if success:
+                player_x = new_x
+                player_y = new_y
         
         # Combat commands
         elif command == "attack":
             if not handle_attack(current_room, inventory, player_mana, equipped_armor, player_hp, 
-                               discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells):
+                               discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells, using_fists):
                 break  # Player defeated
         
         elif command == "run":
@@ -103,7 +106,7 @@ def main():
             handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR)
         
         elif command == "inventory":
-            handle_inventory(inventory)
+            handle_inventory(inventory, using_fists)
         
         elif command == "armor":
             handle_armor(armor_inventory, equipped_armor)
@@ -120,7 +123,9 @@ def main():
                 equipped_armor = new_equipped_armor
         
         elif command == "switch":
-            handle_switch(inventory)
+            success, new_using_fists = handle_switch(inventory)
+            if success:
+                using_fists = new_using_fists
         
         # Resource commands
         elif command == "absorb":

@@ -5,7 +5,7 @@ from constants import SAVE_FILE
 def save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
               player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
               player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-              unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls):
+              unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists):
     data = {
         "worlds": {
             str(floor): {
@@ -48,7 +48,8 @@ def save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, 
         "waypoint_scrolls": waypoint_scrolls,
         "discovered_enemies": list(discovered_enemies),
         "learned_spells": learned_spells,
-        "spell_scrolls": spell_scrolls
+        "spell_scrolls": spell_scrolls,
+        "using_fists": using_fists
     }
     with open(SAVE_FILE, "w") as f:
         json.dump(data, f)
@@ -121,6 +122,7 @@ def load_game():
     discovered_enemies = set(data.get("discovered_enemies", []))
     learned_spells = data.get("learned_spells", [])
     spell_scrolls = data.get("spell_scrolls", {})
+    using_fists = data.get("using_fists", False)
     
     print("Game loaded!")
     
@@ -149,5 +151,6 @@ def load_game():
         "waypoint_scrolls": waypoint_scrolls,
         "discovered_enemies": discovered_enemies,
         "learned_spells": learned_spells,
-        "spell_scrolls": spell_scrolls
+        "spell_scrolls": spell_scrolls,
+        "using_fists": using_fists
     } 

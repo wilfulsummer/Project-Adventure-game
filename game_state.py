@@ -23,4 +23,5 @@ unlocked_floors = set()  # Set of floors that can be accessed with mysterious ke
 waypoints = {}  # Dictionary to store waypoints: {name: (floor, x, y)}
 discovered_enemies = set()  # Track which enemies have been defeated
 learned_spells = []  # List of learned spells in order
-spell_scrolls = {}  # Dictionary of spell scrolls: {spell_name: count} 
+spell_scrolls = {}  # Dictionary of spell scrolls: {spell_name: count}
+using_fists = False  # Track if player is using fists instead of weapons 
