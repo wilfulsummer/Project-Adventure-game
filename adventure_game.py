@@ -1,6 +1,7 @@
 import random
 import json
 import os
+from unique_items import *
 
 # --- Constants ---
 SAVE_FILE = "savegame.json"
@@ -101,6 +102,22 @@ attack_count = 0  # Track number of attacks made
 move_count = 0  # Track number of room movements
 has_viewed_mechanics = False  # Track if player has viewed mechanics guide
 using_fists = False  # Track if player is using fists instead of weapons
+
+# Additional stats for tracking
+enemies_defeated = 0
+bosses_defeated = 0
+gold_earned = 0
+total_damage_dealt = 0
+total_damage_taken = 0
+critical_hits = 0
+rooms_explored = 0
+floors_visited = set()
+items_collected = 0
+weapons_broken = 0
+armor_broken = 0
+
+# Materials inventory for crafting
+materials_inventory = {}  # Dictionary: {material_name: count}
 def distance_from_start(x, y):
   return abs(x) + abs(y)
 
@@ -275,7 +292,7 @@ def create_armor(x, y):
   capped_distance = min(distance, 100)
   scaled = capped_distance // 4  # Reduced scaling from //2 to //4
   return {
-    "name": random.choice(["Leather Armor", "Iron Mail", "Bone Plate", "Troll Hide"]),
+    "name": random.choice(["Leather Armor", "Iron Mail", "Bone Plate", "Leather Cloak", "Chain Vest", "Hide Armor", "Stone Plate", "Cloth Robes", "Studded Leather"]),
     "defense": base_defense + scaled * random.choice([0, 1]),
     "durability": base_durability + scaled * random.choice([0, 1])
   }
@@ -330,6 +347,22 @@ def create_chest_armor(x, y):
     "durability": base_durability + bonus_dur
   }
 
+def create_troll_hide_armor(x, y):
+  """Create special Troll Hide armor that's better than normal armor"""
+  dist = distance_from_start(x, y)
+  # Cap scaling at 100 rooms away from (0,0)
+  capped_dist = min(dist, 100)
+  scaled = capped_dist // 4
+  base_defense = random.randint(4, 7)  # Better base defense than normal armor
+  base_durability = random.randint(12, 20)  # Better base durability than normal armor
+  bonus_def = scaled * random.randint(1, 3)  # Better scaling than normal armor
+  bonus_dur = scaled * random.randint(1, 3)  # Better scaling than normal armor
+  return {
+    "name": "Troll Hide",
+    "defense": base_defense + bonus_def,
+    "durability": base_durability + bonus_dur
+  }
+
 def create_enemy(x, y, force_boss=None):
   dist = distance_from_start(x, y)
   # Cap scaling at 100 rooms away from (0,0)
@@ -345,6 +378,16 @@ def create_enemy(x, y, force_boss=None):
       "hp": base_hp + variation + scaled * random.randint(1, 2),
       "base_attack": 10 + scaled,
       "armor_pierce": 2 + scaled // 3,  # Bosses have more armor piercing, scales with distance from (0,0)
+      "is_boss": True
+    }
+  elif force_boss == "Baby Dragon":
+    base_hp = 75  # Slightly more HP than Troll
+    variation = random.randint(-5, 5)
+    return {
+      "name": "Baby Dragon",
+      "hp": base_hp + variation + scaled * random.randint(1, 3),  # Better scaling than Troll
+      "base_attack": 12 + scaled,  # Slightly higher base attack
+      "armor_pierce": 3 + scaled // 2,  # More armor piercing than Troll
       "is_boss": True
     }
 
@@ -375,13 +418,32 @@ def create_room(floor, x, y):
 
   # Golden key door room (1 in 25)
   if random.randint(1, 25) == 1:
+    # Check for unique items in boss rooms
+    unique_items = check_for_unique_items(x, y, floor, "boss_room")
+    boss_weapons = []
+    boss_armors = []
+    if unique_items:
+      for unique_item in unique_items:
+        if unique_item.get("type") == "weapon":
+          boss_weapons.append(unique_item)
+        elif unique_item.get("type") == "armor":
+          boss_armors.append(unique_item)
+    
+    # Choose boss based on floor
+    if floor == 2:
+      boss_type = "Baby Dragon"
+      description = "You find a glowing golden door… and a Baby Dragon guarding it!"
+    else:
+      boss_type = "Troll"
+      description = "You find a glowing golden door… and the Troll guarding it!"
+    
     return {
-      "description": "You find a glowing golden door… and the Troll guarding it!",
+      "description": description,
       "type": "key_door",
       "key_required": True,
-      "enemy": create_enemy(x, y, force_boss="Troll"),
-      "weapons": [],
-      "armors": [],
+      "enemy": create_enemy(x, y, force_boss=boss_type),
+      "weapons": boss_weapons,
+      "armors": boss_armors,
       "shop": None,
       "chest": None,
       "life_crystal": False,
@@ -390,8 +452,19 @@ def create_room(floor, x, y):
 
   # Chest room (1 in 15)
   if random.randint(1, 15) == 1:
+    # Check for unique items in chest rooms
+    unique_items = check_for_unique_items(x, y, floor, "chest_room")
+    chest_weapons = [create_chest_weapon(distance_from_start(x, y) + random.randint(3, 5))]
+    chest_armors = []
+    if unique_items:
+      for unique_item in unique_items:
+        if unique_item.get("type") == "weapon":
+          chest_weapons.append(unique_item)
+        elif unique_item.get("type") == "armor":
+          chest_armors.append(unique_item)
+    
     loot = {
-      "weapons": [create_chest_weapon(distance_from_start(x, y) + random.randint(3, 5))],
+      "weapons": chest_weapons,
       "potions": 2,
       "locked": True,
       "life_crystal": random.random() < 0.2,
@@ -405,7 +478,7 @@ def create_room(floor, x, y):
       "chest": loot,
       "enemy": None,
       "weapons": [],
-      "armors": [],
+      "armors": chest_armors,
       "shop": None,
       "life_crystal": False
     }
@@ -491,6 +564,15 @@ def create_room(floor, x, y):
   if random.random() < 0.2:
     armors.append(create_armor(x, y))
   
+  # Check for unique items (very rare, specific locations only)
+  unique_items = check_for_unique_items(x, y, floor, "normal")
+  if unique_items:
+    for unique_item in unique_items:
+      if unique_item.get("type") == "weapon":
+        weapons.append(unique_item)
+      elif unique_item.get("type") == "armor":
+        armors.append(unique_item)
+  
   # Mysterious key (1 in 50 chance)
   mysterious_key_item = None
   if random.randint(1, 50) == 1:
@@ -540,6 +622,11 @@ def get_room(floor, x, y):
       }
     else:
       worlds[floor][(x, y)] = create_room(floor, x, y)
+    
+    # Track exploration stats
+    rooms_explored += 1
+    floors_visited.add(floor)
+  
   return worlds[floor][(x, y)]
 def show_room(room):
   print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}):", room["description"])
@@ -690,7 +777,8 @@ def save_game():
     "attack_count": attack_count,
     "move_count": move_count,
     "has_viewed_mechanics": has_viewed_mechanics,
-    "using_fists": using_fists
+    "using_fists": using_fists,
+    "materials_inventory": materials_inventory
   }
   with open(SAVE_FILE, "w") as f:
     json.dump(data, f)
@@ -777,6 +865,7 @@ def load_game():
   move_count = data.get("move_count", 0)
   has_viewed_mechanics = data.get("has_viewed_mechanics", False)
   using_fists = data.get("using_fists", False)
+  materials_inventory = data.get("materials_inventory", {})
   
   print("Game loaded!")
   return True
@@ -821,6 +910,8 @@ def show_bestiary():
       print("  🎯 Training Dummy: ??? HP - Practice Target (No Rewards)")
     elif enemy_name == "Troll":
       print("  👹 Troll: ??? HP - Boss Enemy (Drops Mysterious Key)")
+    elif enemy_name == "Baby Dragon":
+      print("  🐉 Baby Dragon: ??? HP - Boss Enemy (Drops Mysterious Key + Dragon Scales)")
   
   # Combat tips
   print("\n💡 Combat Tips:")
@@ -865,6 +956,7 @@ def show_combat_help():
   print("  - Hungry Wolves: Kill quickly due to high attack potential")
   print("  - Orcs: Tough opponents, use your best weapons")
   print("  - Rats: Easy targets, good for farming gold")
+  print("  - Baby Dragons: Floor 2 boss, tougher than Trolls but drop valuable scales")
   print("==================")
 
 def show_movement_help():
@@ -997,8 +1089,59 @@ def show_all_help():
   print("Progression:")
   print("  take_key, drop_mysterious_key, use_key, open, loot, buy")
   print("Utility:")
-  print("  map, waypoint, view, delete, teleport, bestiary, save, load, guide, quit")
+  print("  map, waypoint, view, delete, teleport, bestiary, uniques, stats, materials, save, load, guide, quit")
   print("==================")
+
+def show_detailed_stats():
+  """Display detailed player statistics"""
+  print("\n=== DETAILED STATISTICS ===")
+  print(f"Combat Stats:")
+  print(f"  Enemies Defeated: {enemies_defeated}")
+  print(f"  Bosses Defeated: {bosses_defeated}")
+  print(f"  Total Damage Dealt: {total_damage_dealt}")
+  print(f"  Total Damage Taken: {total_damage_taken}")
+  print(f"  Critical Hits: {critical_hits}")
+  print(f"  Attacks Made: {attack_count}")
+  
+  print(f"\nExploration Stats:")
+  print(f"  Rooms Explored: {rooms_explored}")
+  print(f"  Floors Visited: {len(floors_visited)}")
+  print(f"  Moves Made: {move_count}")
+  
+  print(f"\nItem Stats:")
+  print(f"  Items Collected: {items_collected}")
+  print(f"  Weapons Broken: {weapons_broken}")
+  print(f"  Armor Broken: {armor_broken}")
+  
+  print(f"\nResource Stats:")
+  print(f"  Gold Earned: {gold_earned}")
+  print(f"  Health Potions Used: {player_potions}")
+  print(f"  Stamina Potions Used: {stamina_potions}")
+  print(f"  Mana Potions Used: {mana_potions}")
+  
+  print(f"\nProgression Stats:")
+  print(f"  Mysterious Keys Found: {len(mysterious_keys)}")
+  print(f"  Golden Keys Found: {golden_keys}")
+  print(f"  Waypoints Set: {len(waypoints)}")
+  print(f"  Spells Learned: {len(learned_spells)}")
+  print(f"  Enemies Discovered: {len(discovered_enemies)}")
+  
+  print("==========================")
+
+def show_materials():
+  """Display materials inventory"""
+  if not materials_inventory:
+    print("\n=== MATERIALS INVENTORY ===")
+    print("You have no materials yet.")
+    print("Materials are collected from defeated enemies and can be used for crafting!")
+    print("=============================")
+    return
+  
+  print("\n=== MATERIALS INVENTORY ===")
+  for material, count in materials_inventory.items():
+    print(f"  • {material}: {count}")
+  print("\nMaterials can be used for crafting in future updates!")
+  print("=============================")
 # --- Start game ---
 print("Welcome to the Adventure Game!")
 print("Type 'guide' to see available info on how to play! - MUST READ")
@@ -1219,6 +1362,7 @@ while True:
           if random.random() < crit_chance:
             original_damage = damage
             damage = int(damage * crit_multiplier)
+            critical_hits += 1
             if weapon_name == "Dagger":
               print(f"*** CRITICAL HIT! *** Your dagger strikes true! {original_damage} → {damage} damage!")
             else:
@@ -1235,12 +1379,14 @@ while True:
             weapon["durability"] -= 1
             if weapon["durability"] <= 0:
               print(f"Your {weapon['name']} breaks!")
+              weapons_broken += 1
               inventory.pop(0)
           else:
             print("Your weapon doesn't lose durability against the training dummy.")
         
         # Deal damage to enemy
         enemy["hp"] -= damage
+        total_damage_dealt += damage
         
         # Check if enemy is defeated
         if enemy["hp"] <= 0:
@@ -1248,6 +1394,9 @@ while True:
             print("Congrats! You wasted your time...")
           else:
             print(f"You defeated the {enemy['name']}!")
+            enemies_defeated += 1
+            if enemy.get("is_boss"):
+              bosses_defeated += 1
           
           # Add enemy to discovered enemies and show unlock message
           if enemy["name"] not in discovered_enemies:
@@ -1261,12 +1410,34 @@ while True:
               print(f"The boss drops a mysterious key for Floor {player_floor}!")
             else:
               print(f"The boss drops a mysterious key for Floor {player_floor}, but you already have one!")
-          else:
-            # Regular enemy drops money (but not training dummy)
-            if not enemy.get("is_training_dummy"):
-              money_drop = random.randint(5, 15)
-              player_money += money_drop
-              print(f"You found {money_drop} gold!")
+            
+                        # Special reward for Baby Dragon
+            if enemy["name"] == "Baby Dragon":
+              dragon_scales = random.randint(2, 4)
+              materials_inventory["Dragon Scales"] = materials_inventory.get("Dragon Scales", 0) + dragon_scales
+              print(f"You collect {dragon_scales} Dragon Scales from the Baby Dragon!")
+            else:
+              # Regular enemy drops money (but not training dummy)
+              if not enemy.get("is_training_dummy"):
+                money_drop = random.randint(5, 15)
+                player_money += money_drop
+                gold_earned += money_drop
+                print(f"You found {money_drop} gold!")
+                
+                # Random material drops from regular enemies (rare)
+                if random.random() < 0.1:  # 10% chance
+                  material_drops = {
+                    "Goblin": "Goblin Teeth",
+                    "Skeleton": "Bone Fragments", 
+                    "Zombie": "Rotten Flesh",
+                    "Orc": "Orc Hide",
+                    "Rat": "Rat Fur",
+                    "Hungry Wolf": "Wolf Fang"
+                  }
+                  if enemy["name"] in material_drops:
+                    material_name = material_drops[enemy["name"]]
+                    materials_inventory[material_name] = materials_inventory.get(material_name, 0) + 1
+                    print(f"You also find {material_name}!")
           
           current_room["enemy"] = None
         else:
@@ -1327,9 +1498,11 @@ while True:
                 equipped_armor["durability"] -= 1
                 if equipped_armor["durability"] <= 0:
                   print(f"Your {equipped_armor['name']} breaks!")
+                  armor_broken += 1
                   equipped_armor = None
               
               player_hp -= enemy_damage
+              total_damage_taken += enemy_damage
               print(f"The {enemy['name']} attacks you for {enemy_damage} damage!")
               print(f"You have {player_hp} HP remaining.")
               
@@ -1403,6 +1576,7 @@ while True:
               continue
             inventory.append(item)
             current_room["weapons"].remove(item)
+            items_collected += 1
             print(f"You picked up the {item['name']}!")
           else:  # armor
             if len(armor_inventory) >= MAX_ARMOR:
@@ -1410,6 +1584,7 @@ while True:
               continue
             armor_inventory.append(item)
             current_room["armors"].remove(item)
+            items_collected += 1
             # Auto-equip first armor if no armor is currently equipped
             if not equipped_armor:
               equipped_armor = item
@@ -1921,6 +2096,14 @@ while True:
         print(f"Found {gold_reward} gold!")
         print(f"Found {potion_reward} health potions!")
         
+        # Add Troll Hide armor to treasure room
+        if len(armor_inventory) < MAX_ARMOR:
+          troll_hide = create_troll_hide_armor(player_x, player_y)
+          armor_inventory.append(troll_hide)
+          print(f"Found {troll_hide['name']} (Defense: {troll_hide['defense']}, Durability: {troll_hide['durability']})!")
+        else:
+          print("Your armor inventory is full! The Troll Hide was left behind.")
+        
         if player_floor not in mysterious_keys:
           mysterious_keys[player_floor] = True
           print(f"Found a mysterious key for Floor {player_floor}!")
@@ -2014,6 +2197,12 @@ while True:
 
   elif command == "bestiary":
     show_bestiary()
+  elif command == "uniques":
+    show_unique_collection()
+  elif command == "stats":
+    show_detailed_stats()
+  elif command == "materials":
+    show_materials()
 
   elif command == "use_scroll":
     if not spell_scrolls:
