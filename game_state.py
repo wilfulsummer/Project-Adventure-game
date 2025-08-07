@@ -1,6 +1,6 @@
 # --- Game State ---
 worlds = {}  # Dictionary of floors: {floor: world}
-player_floor = 0
+player_floor = 1
 player_x = 0
 player_y = 0
 inventory = []

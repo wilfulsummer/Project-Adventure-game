@@ -244,7 +244,7 @@ def show_movement_help():
     print("\nMovement Tips:")
     print("  - You can escape from boss enemies by moving away")
     print("  - Regular enemies will block your path until defeated")
-    print("  - Training dummy at (0,0) on Floor 0 can be moved past freely")
+    print("  - Training dummy at (0,0) on Floor 1 can be moved past freely")
     print("  - Each floor has its own world to explore")
     print("==================")
 
@@ -264,7 +264,7 @@ def show_items_help():
     print("\nItem Tips:")
     print("  - Weapons and armor have durability that decreases with use")
     print("  - Items and enemies scale with distance from (0,0) but cap at 100 rooms away")
-    print("  - Floor 0 gear caps at ~25 damage and ~40 durability")
+    print("  - Floor 1 gear caps at ~25 damage and ~40 durability")
     print("  - To find better gear, you must descend to higher floors")
     print("  - Use 'inventory' to see your weapons and 'armor' to see armor")
     print("  - Spell Books can cast learned spells (buy scrolls from shops)")
@@ -326,7 +326,7 @@ def show_utility_help():
     print("  - Use waypoints to mark important locations (max 10)")
     print("  - Waypoint scrolls can teleport you to any waypoint, even during combat")
     print("  - Waypoint scrolls can be bought from shops for 40 gold (max 3)")
-    print("  - The training dummy at (0,0) on Floor 0 can be attacked without losing durability")
+    print("  - The training dummy at (0,0) on Floor 1 can be attacked without losing durability")
     print("==================")
 
 def show_all_help():

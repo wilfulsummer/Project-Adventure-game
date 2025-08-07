@@ -74,7 +74,7 @@ enemy_stats = {
 
 # --- Game State ---
 worlds = {}  # Dictionary of floors: {floor: world}
-player_floor = 0
+player_floor = 1
 player_x = 0
 player_y = 0
 inventory = []
@@ -595,11 +595,12 @@ def create_room(floor, x, y):
   }
 
 def get_room(floor, x, y):
+  global rooms_explored, floors_visited
   if floor not in worlds:
     worlds[floor] = {}
   
   if (x, y) not in worlds[floor]:
-    if floor == 0 and x == 0 and y == 0:
+    if floor == 1 and x == 0 and y == 0:
       worlds[floor][(x, y)] = {
         "description": "You are in a clearing with a training dummy.",
         "type": "normal",
@@ -802,7 +803,7 @@ def load_game():
     for key, value in data["world"].items():
       x, y = map(int, key.split(","))
       worlds[0][(x, y)] = value
-    player_floor = data.get("player_floor", 0)
+    player_floor = data.get("player_floor", 1)
   else:
     # New multi-floor format
     worlds.clear()
@@ -836,7 +837,7 @@ def load_game():
   # Handle old mysterious_key format
   if "mysterious_key" in data and data["mysterious_key"]:
     mysterious_keys.clear()
-    mysterious_keys[0] = True  # Old saves get Floor 0 key
+    mysterious_keys[1] = True  # Old saves get Floor 1 key
   else:
     mysterious_keys.clear()
     mysterious_keys.update(data.get("mysterious_keys", {}))
@@ -968,7 +969,7 @@ def show_movement_help():
   print("\nMovement Tips:")
   print("  - You can escape from boss enemies by moving away")
   print("  - Regular enemies will block your path until defeated")
-  print("  - Training dummy at (0,0) on Floor 0 can be moved past freely")
+  print("  - Training dummy at (0,0) on Floor 1 can be moved past freely")
   print("  - Each floor has its own world to explore")
   print("==================")
 
@@ -987,7 +988,7 @@ def show_items_help():
   print("\nItem Tips:")
   print("  - Weapons and armor have durability that decreases with use")
   print("  - Items and enemies scale with distance from (0,0) but cap at 100 rooms away")
-  print("  - Floor 0 gear caps at ~25 damage and ~40 durability")
+  print("  - Floor 1 gear caps at ~25 damage and ~40 durability")
   print("  - To find better gear, you must descend to deeper floors")
   print("  - Use 'inventory' to see your weapons and 'armor' to see armor")
   print("  - Spell Books can cast learned spells (buy scrolls from shops)")
@@ -1051,7 +1052,7 @@ def show_utility_help():
   print("  - Use waypoints to mark important locations (max 10)")
   print("  - Waypoint scrolls can teleport you to any waypoint, even during combat")
   print("  - Waypoint scrolls can be bought from shops for 25-35 gold (3-4 available per shop, max 3 carry)")
-  print("  - The training dummy at (0,0) on Floor 0 can be attacked without losing durability")
+  print("  - The training dummy at (0,0) on Floor 1 can be attacked without losing durability")
   print("==================")
 
 def show_mechanics_help():
@@ -1060,7 +1061,7 @@ def show_mechanics_help():
   print("Core Game Mechanics:")
   print("  - Distance scaling: Enemies and items get stronger/better the further you are from (0,0)")
   print("  - Scaling caps at 100 rooms away from (0,0) for balance")
-  print("  - Floor 0 gear caps at ~25 damage and ~40 durability")
+  print("  - Floor 1 gear caps at ~25 damage and ~40 durability")
   print("  - To find better gear, you must descend to deeper floors")
   print("  - Each floor has its own world to explore")
   print("\nCommand Cancellation:")
@@ -1072,7 +1073,7 @@ def show_mechanics_help():
   print("  - Golden keys (max 3) are needed to loot treasure chambers")
   print("  - Boss enemies can be escaped from by moving away")
   print("  - Regular enemies block your path until defeated")
-  print("  - Training dummy at (0,0) on Floor 0 can be moved past freely")
+  print("  - Training dummy at (0,0) on Floor 1 can be moved past freely")
   print("==================")
 
 def show_all_help():
@@ -1092,7 +1093,7 @@ def show_all_help():
   print("  map, waypoint, view, delete, teleport, bestiary, uniques, stats, materials, save, load, guide, quit")
   print("==================")
 
-def show_detailed_stats():
+def show_stats():
   """Display detailed player statistics"""
   print("\n=== DETAILED STATISTICS ===")
   print(f"Combat Stats:")
@@ -1474,6 +1475,7 @@ while True:
               if not enemy.get("is_training_dummy"):
                 money_drop = random.randint(5, 15)
                 player_money += money_drop
+                gold_earned += money_drop
                 print(f"You found {money_drop} gold!")
               current_room["enemy"] = None
               continue
@@ -2200,7 +2202,7 @@ while True:
   elif command == "uniques":
     show_unique_collection()
   elif command == "stats":
-    show_detailed_stats()
+            show_stats()
   elif command == "materials":
     show_materials()
 

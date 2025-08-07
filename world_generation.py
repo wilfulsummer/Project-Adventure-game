@@ -362,7 +362,7 @@ def get_room(floor, x, y, worlds, learned_spells):
         worlds[floor] = {}
     
     if (x, y) not in worlds[floor]:
-        if floor == 0 and x == 0 and y == 0:
+        if floor == 1 and x == 0 and y == 0:
             worlds[floor][(x, y)] = {
                 "description": "You are in a clearing with a training dummy.",
                 "type": "normal",

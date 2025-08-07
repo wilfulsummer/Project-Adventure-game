@@ -71,7 +71,7 @@ def load_game():
         for key, value in data["world"].items():
             x, y = map(int, key.split(","))
             worlds[0][(x, y)] = value
-        player_floor = data.get("player_floor", 0)
+        player_floor = data.get("player_floor", 1)
     else:
         # New multi-floor format
         worlds = {}
@@ -102,7 +102,7 @@ def load_game():
     
     # Handle old mysterious_key format
     if "mysterious_key" in data and data["mysterious_key"]:
-        mysterious_keys = {0: True}  # Old saves get Floor 0 key
+        mysterious_keys = {1: True}  # Old saves get Floor 1 key
     else:
         mysterious_keys = data.get("mysterious_keys", {})
     
