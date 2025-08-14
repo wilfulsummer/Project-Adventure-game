@@ -55,6 +55,12 @@ def should_unique_spawn_here(unique_id, x, y, floor):
     """Check if a unique item should spawn at the given location"""
     # Define specific spawn conditions for each unique
     unique_spawn_conditions = {
+        # The Wanderer's Cloak - spawns after 100+ rooms from (0,0) on Floor 1
+        "wanderers_cloak": {
+            "floor": 1,
+            "min_distance": 100,  # Must be at least 100 rooms away from (0,0)
+            "room_type": "normal"  # Can spawn in any normal room
+        }
         # Example format:
         # "sword_of_flames": {"floor": 5, "x": 10, "y": 15, "room_type": "special"},
         # "crown_of_kings": {"floor": 10, "x": 0, "y": 0, "room_type": "boss_room"},
@@ -70,11 +76,17 @@ def should_unique_spawn_here(unique_id, x, y, floor):
     if "floor" in conditions and floor != conditions["floor"]:
         return False
     
-    # Check specific coordinates
-    if "x" in conditions and x != conditions["x"]:
-        return False
-    if "y" in conditions and y != conditions["y"]:
-        return False
+    # Check specific coordinates (only if specified)
+    if "x" in conditions and "y" in conditions:
+        if x != conditions["x"] or y != conditions["y"]:
+            return False
+    
+    # Check minimum distance requirement
+    if "min_distance" in conditions:
+        from world_generation import distance_from_start
+        distance = distance_from_start(x, y)
+        if distance < conditions["min_distance"]:  # Must be at least min_distance (100)
+            return False
     
     # Check room type (if specified)
     if "room_type" in conditions:
@@ -87,8 +99,9 @@ def check_for_unique_items(x, y, floor, room_type="normal"):
     """Check if any unique items should spawn in this room"""
     unique_items = []
     
-    # List of all possible unique IDs (will be populated when we add uniques)
+    # List of all possible unique IDs (will be populated when we create uniques)
     all_unique_ids = [
+        "wanderers_cloak",  # The Wanderer's Cloak - unique armor
         # "sword_of_flames",
         # "crown_of_kings", 
         # Add unique IDs here when we create them
@@ -98,7 +111,11 @@ def check_for_unique_items(x, y, floor, room_type="normal"):
         if should_unique_spawn_here(unique_id, x, y, floor):
             # Check room type if specified
             unique_spawn_conditions = {
-                # Define conditions here when we add uniques
+                "wanderers_cloak": {
+                    "floor": 1,
+                    "min_distance": 100,
+                    "room_type": "normal"
+                }
             }
             
             if unique_id in unique_spawn_conditions:
@@ -106,8 +123,13 @@ def check_for_unique_items(x, y, floor, room_type="normal"):
                 if "room_type" in conditions and room_type != conditions["room_type"]:
                     continue
             
-            # Create the unique item
-            unique_item = get_unique_item(unique_id, x, y, floor)
+            # Create the unique item based on its type
+            if unique_id == "wanderers_cloak":
+                unique_item = create_unique_armor(unique_id, x, y, floor)
+            else:
+                # Default to weapon creation for other uniques
+                unique_item = create_unique_weapon(unique_id, x, y, floor)
+                
             if unique_item:
                 unique_items.append(unique_item)
     
@@ -127,8 +149,33 @@ def create_unique_armor(unique_id, x, y, floor):
     if is_unique_discovered(unique_id):
         return None
     
-    # Placeholder for unique armor creation
-    # Will be implemented when we add specific unique items
+    if unique_id == "wanderers_cloak":
+        from world_generation import distance_from_start
+        
+        # Calculate distance from starting point
+        distance = distance_from_start(x, y)
+        
+        # The Wanderer's Cloak scales with distance but caps at 100 for balance
+        # Base defense: 8, scaling: +1 per 10 rooms (capped at 100 rooms)
+        capped_distance = min(distance, 100)
+        base_defense = 8
+        scaling_bonus = capped_distance // 10
+        
+        # Create the unique armor
+        wanderers_cloak = {
+            "name": "The Wanderer's Cloak",
+            "type": "armor",
+            "defense": base_defense + scaling_bonus,
+            "durability": 60,
+            "max_durability": 60,
+            "unique_id": "wanderers_cloak",
+            "description": f"A legendary cloak that grows stronger with distance. Found {distance} rooms from the starting point.",
+            "rarity": "unique"
+        }
+        
+        return wanderers_cloak
+    
+    # Placeholder for other unique armor items
     return None
 
 def create_unique_consumable(unique_id, x, y, floor):
@@ -156,4 +203,5 @@ def show_unique_collection():
     print("================================")
 
 # Initialize unique items system
-load_unique_items() 
+# Note: load_unique_items() is called when needed, not at module import
+# This prevents persistent state issues during testing 

@@ -630,7 +630,20 @@ def get_room(floor, x, y):
   
   return worlds[floor][(x, y)]
 def show_room(room):
-  print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}):", room["description"])
+  # Dynamic room description based on current state
+  if room.get("type") == "key_door":
+    if room.get("enemy"):
+      # Troll is still alive
+      print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}): You find a glowing golden door… and the Troll guarding it!")
+    else:
+      # Troll is dead, show updated description
+      if not room.get("treasure_looted"):
+        print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}): The golden door stands open! A magnificent treasure chamber lies beyond!")
+      else:
+        print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}): The golden door stands open, but the treasure chamber has been emptied.")
+  else:
+    # For other room types, use the original description
+    print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}):", room["description"])
 
   if room.get("crystal_type") == "life":
     print("A glowing red crystal pulses on a stone pedestal. Use 'absorb' to consume it.")
@@ -1412,33 +1425,33 @@ while True:
             else:
               print(f"The boss drops a mysterious key for Floor {player_floor}, but you already have one!")
             
-                        # Special reward for Baby Dragon
+            # Special reward for Baby Dragon
             if enemy["name"] == "Baby Dragon":
               dragon_scales = random.randint(2, 4)
               materials_inventory["Dragon Scales"] = materials_inventory.get("Dragon Scales", 0) + dragon_scales
               print(f"You collect {dragon_scales} Dragon Scales from the Baby Dragon!")
-            else:
-              # Regular enemy drops money (but not training dummy)
-              if not enemy.get("is_training_dummy"):
-                money_drop = random.randint(5, 15)
-                player_money += money_drop
-                gold_earned += money_drop
-                print(f"You found {money_drop} gold!")
-                
-                # Random material drops from regular enemies (rare)
-                if random.random() < 0.1:  # 10% chance
-                  material_drops = {
-                    "Goblin": "Goblin Teeth",
-                    "Skeleton": "Bone Fragments", 
-                    "Zombie": "Rotten Flesh",
-                    "Orc": "Orc Hide",
-                    "Rat": "Rat Fur",
-                    "Hungry Wolf": "Wolf Fang"
-                  }
-                  if enemy["name"] in material_drops:
-                    material_name = material_drops[enemy["name"]]
-                    materials_inventory[material_name] = materials_inventory.get(material_name, 0) + 1
-                    print(f"You also find {material_name}!")
+          
+          # Regular enemy drops money (but not training dummy)
+          if not enemy.get("is_training_dummy"):
+            money_drop = random.randint(5, 15)
+            player_money += money_drop
+            gold_earned += money_drop
+            print(f"You found {money_drop} gold!")
+            
+            # Random material drops from regular enemies (rare)
+            if random.random() < 0.1:  # 10% chance
+              material_drops = {
+                "Goblin": "Goblin Teeth",
+                "Skeleton": "Bone Fragments", 
+                "Zombie": "Rotten Flesh",
+                "Orc": "Orc Hide",
+                "Rat": "Rat Fur",
+                "Hungry Wolf": "Wolf Fang"
+              }
+              if enemy["name"] in material_drops:
+                material_name = material_drops[enemy["name"]]
+                materials_inventory[material_name] = materials_inventory.get(material_name, 0) + 1
+                print(f"You also find {material_name}!")
           
           current_room["enemy"] = None
         else:
@@ -2104,7 +2117,13 @@ while True:
           armor_inventory.append(troll_hide)
           print(f"Found {troll_hide['name']} (Defense: {troll_hide['defense']}, Durability: {troll_hide['durability']})!")
         else:
+          # Store Troll Hide in the room for later pickup
+          troll_hide = create_troll_hide_armor(player_x, player_y)
+          if "armors" not in current_room:
+            current_room["armors"] = []
+          current_room["armors"].append(troll_hide)
           print("Your armor inventory is full! The Troll Hide was left behind.")
+          print("You can pick it up later by dropping some armor first.")
         
         if player_floor not in mysterious_keys:
           mysterious_keys[player_floor] = True

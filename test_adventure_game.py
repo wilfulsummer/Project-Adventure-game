@@ -6,6 +6,40 @@ from unittest.mock import patch, MagicMock
 from io import StringIO
 import sys
 
+# Mock input system for testing
+class MockInput:
+    """Simulates user input for testing without hanging"""
+    
+    def __init__(self, inputs=None):
+        self.inputs = inputs or []
+        self.index = 0
+    
+    def __call__(self, prompt=""):
+        if self.index < len(self.inputs):
+            value = self.inputs[self.index]
+            self.index += 1
+            return value
+        return "quit"  # Default to quit if no more inputs
+    
+    def add_inputs(self, *inputs):
+        """Add more inputs to the queue"""
+        self.inputs.extend(inputs)
+    
+    def reset(self):
+        """Reset the input index"""
+        self.index = 0
+
+# Global mock input instance
+mock_input = MockInput()
+
+# Patch the built-in input function globally for tests
+def mock_input_func(prompt=""):
+    return mock_input(prompt)
+
+# Monkey patch input function
+import builtins
+builtins.input = mock_input_func
+
 # Import game modules
 from constants import *
 from game_state import *
@@ -22,6 +56,12 @@ class TestAdventureGame(unittest.TestCase):
     
     def setUp(self):
         """Set up test fixtures before each test method"""
+        # Completely avoid mod system during tests to prevent hanging
+        # We'll mock any mod-related functionality if needed
+        
+        # Reset mock input for each test
+        mock_input.reset()
+        
         # Reset global game state
         global worlds, player_floor, player_x, player_y, inventory, armor_inventory, equipped_armor
         global player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana
@@ -57,10 +97,27 @@ class TestAdventureGame(unittest.TestCase):
         spell_scrolls = {}
         using_fists = False
         
+        # Reset unique items system for clean testing
+        from unique_items import discovered_uniques, load_unique_items
+        discovered_uniques.clear()
+        
+        # Also check if there's a unique_items.json file and remove it for testing
+        import os
+        if os.path.exists("unique_items.json"):
+            os.remove("unique_items.json")
+        
+        # Force reload to ensure clean state
+        load_unique_items()
+        
         # Create a temporary save file for testing
         self.temp_dir = tempfile.mkdtemp()
         self.test_save_file = os.path.join(self.temp_dir, "test_save.json")
-        
+    
+    def setup_mock_inputs(self, *inputs):
+        """Set up mock inputs for a test"""
+        mock_input.reset()
+        mock_input.add_inputs(*inputs)
+
     def tearDown(self):
         """Clean up after each test method"""
         # Remove temporary files
@@ -225,7 +282,7 @@ class TestAdventureGame(unittest.TestCase):
             result = handle_inventory([], False)
             self.assertTrue(result)
             mock_print.assert_any_call("You have no weapons.")
-            mock_print.assert_any_call("Currently using: Fists (Damage: 3, Durability: Infinite)")
+            mock_print.assert_any_call("Currently using: Fists (Damage: 4, Durability: Infinite)")
         
         # Test inventory with weapons
         inventory = [
@@ -1010,6 +1067,62 @@ class TestAdventureGame(unittest.TestCase):
         
         self.assertEqual(avg_gold, 10)
         self.assertTrue(min_gold <= avg_gold <= max_gold)
+
+    def test_unique_items_obtaining(self):
+        """Test that unique items can be obtained when conditions are met"""
+        from unique_items import check_for_unique_items, is_unique_discovered
+        
+        # Test that Wanderer's Cloak spawns at 100+ rooms distance
+        # At (100, 0) - exactly 100 rooms away
+        items = check_for_unique_items(100, 0, 1, "normal")
+        self.assertTrue(len(items) > 0, "Unique item should spawn at exactly 100 rooms")
+        
+        # Verify it's The Wanderer's Cloak
+        if items:
+            unique_item = items[0]
+            self.assertEqual(unique_item["name"], "The Wanderer's Cloak")
+            self.assertEqual(unique_item["type"], "armor")
+            self.assertEqual(unique_item["durability"], 60)
+            self.assertEqual(unique_item["rarity"], "unique")
+            
+            # Check defense scaling
+            self.assertGreaterEqual(unique_item["defense"], 8)  # Base defense
+            self.assertLessEqual(unique_item["defense"], 18)    # Max defense (capped)
+        
+        # Test that it spawns at 150+ rooms as well
+        items = check_for_unique_items(150, 0, 1, "normal")
+        self.assertTrue(len(items) > 0, "Unique item should spawn at 150+ rooms")
+        
+        # Test that it doesn't spawn on wrong floor
+        items = check_for_unique_items(150, 0, 2, "normal")
+        self.assertEqual(len(items), 0, "Unique item should not spawn on wrong floor")
+        
+        # Test that it doesn't spawn too close
+        items = check_for_unique_items(50, 49, 1, "normal")  # Distance: 50 + 49 = 99 (too close)
+        self.assertEqual(len(items), 0, "Unique item should not spawn too close")
+
+    def test_unique_items_persistence(self):
+        """Test that unique items don't appear again after being discovered once"""
+        from unique_items import check_for_unique_items, mark_unique_discovered, is_unique_discovered
+        
+        # First, check that the item can spawn
+        items = check_for_unique_items(150, 0, 1, "normal")
+        self.assertTrue(len(items) > 0, "Unique item should spawn initially")
+        
+        # Mark it as discovered
+        mark_unique_discovered("wanderers_cloak", {"floor": 1, "x": 150, "y": 0})
+        self.assertTrue(is_unique_discovered("wanderers_cloak"), "Item should be marked as discovered")
+        
+        # Now check that it doesn't spawn again
+        items = check_for_unique_items(150, 0, 1, "normal")
+        self.assertEqual(len(items), 0, "Unique item should not spawn again after discovery")
+        
+        # Check at different locations too
+        items = check_for_unique_items(200, 0, 1, "normal")
+        self.assertEqual(len(items), 0, "Unique item should not spawn at any location after discovery")
+        
+        # Test that the discovery system works across different coordinates
+        self.assertTrue(is_unique_discovered("wanderers_cloak"), "Discovery should persist across different checks")
 
 if __name__ == '__main__':
     # Run the tests

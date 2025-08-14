@@ -6,6 +6,10 @@ def save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, 
               player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
               player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
               unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists):
+    
+    # Import unique items system to get discovered uniques
+    from unique_items import discovered_uniques
+    
     data = {
         "worlds": {
             str(floor): {
@@ -49,7 +53,8 @@ def save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, 
         "discovered_enemies": list(discovered_enemies),
         "learned_spells": learned_spells,
         "spell_scrolls": spell_scrolls,
-        "using_fists": using_fists
+        "using_fists": using_fists,
+        "discovered_uniques": discovered_uniques  # Save unique items discovered
     }
     with open(SAVE_FILE, "w") as f:
         json.dump(data, f)
@@ -124,6 +129,9 @@ def load_game():
     spell_scrolls = data.get("spell_scrolls", {})
     using_fists = data.get("using_fists", False)
     
+    # Load unique items discovered
+    discovered_uniques = data.get("discovered_uniques", {})
+    
     print("Game loaded!")
     
     return {
@@ -152,5 +160,6 @@ def load_game():
         "discovered_enemies": discovered_enemies,
         "learned_spells": learned_spells,
         "spell_scrolls": spell_scrolls,
-        "using_fists": using_fists
+        "using_fists": using_fists,
+        "discovered_uniques": discovered_uniques
     } 

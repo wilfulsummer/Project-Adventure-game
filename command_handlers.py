@@ -431,12 +431,12 @@ def handle_inventory(inventory, using_fists=False):
     
     # Show current weapon status
     if using_fists:
-        print("Currently using: Fists (Damage: 3, Durability: Infinite)")
+        print("Currently using: Fists (Damage: 4, Durability: Infinite)")
     elif inventory:
         print(f"Currently using: {inventory[0]['name']}")
     else:
         print("You have no weapons.")
-        print("Currently using: Fists (Damage: 3, Durability: Infinite)")
+        print("Currently using: Fists (Damage: 4, Durability: Infinite)")
     return True
 
 def handle_armor(armor_inventory, equipped_armor):
@@ -542,7 +542,7 @@ def handle_equip(armor_inventory):
 def handle_switch(inventory):
     """Handle switch command"""
     print("Which weapon do you want to use?")
-    print("  0. Fists (Damage: 3, Durability: Infinite)")
+    print("  0. Fists (Damage: 4, Durability: Infinite)")
     for i, weapon in enumerate(inventory):
         if weapon.get("name") == "Spell Book":
             print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']})")

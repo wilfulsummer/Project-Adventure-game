@@ -27,7 +27,21 @@ def show_room(room, player_floor, player_x, player_y, inventory, player_hp, play
               player_stamina, player_max_stamina, player_mana, player_max_mana, player_money, 
               player_potions, stamina_potions, mana_potions, waypoint_scrolls, mysterious_keys, 
               golden_keys, equipped_armor, spell_scrolls, learned_spells, discovered_enemies, unlocked_floors):
-    print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}):", room["description"])
+    
+    # Dynamic room description based on current state
+    if room.get("type") == "key_door":
+        if room.get("enemy"):
+            # Troll is still alive
+            print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}): You find a glowing golden door… and the Troll guarding it!")
+        else:
+            # Troll is dead, show updated description
+            if not room.get("treasure_looted"):
+                print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}): The golden door stands open! A magnificent treasure chamber lies beyond!")
+            else:
+                print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}): The golden door stands open, but the treasure chamber has been emptied.")
+    else:
+        # For other room types, use the original description
+        print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}):", room.get("description", "A mysterious room..."))
 
     if room.get("crystal_type") == "life":
         print("A glowing red crystal pulses on a stone pedestal. Use 'absorb' to consume it.")
