@@ -1,0 +1,23 @@
+# Git ignore file itself
+.gitignore
+
+# Cursor IDE IDE rules file
+.cursorrules
+
+# Save files and directories
+savegame.json
+saves/
+*.save
+
+# Unique items tracking (should not be tracked by git)
+unique_items.json
+
+# Mods directory (user-created content)
+mods/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+ 
