@@ -266,6 +266,7 @@ def register_mod():
         register_hook(f"developer_mod.{hook_name}", hook_func)
     
     # Register guide section using the new system
+    global guides
     guides = {
         "guide": {
             "name": "developer",
