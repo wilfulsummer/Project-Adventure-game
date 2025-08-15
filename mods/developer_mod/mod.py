@@ -247,7 +247,9 @@ def show_developer_guide():
 def startup_hook():
     """Hook called at game startup to ask for permission"""
     global developer_mode_enabled
-    developer_mode_enabled = ask_permission()
+    result = ask_permission()
+    developer_mode_enabled = result
+    print(f"Startup hook: Developer mode set to {developer_mode_enabled}")
     return developer_mode_enabled
 
 hooks = {

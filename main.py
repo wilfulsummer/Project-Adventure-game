@@ -7,6 +7,57 @@ from ui_functions import *
 from save_load import save_game, load_game
 from command_handlers import *
 
+def handle_player_death():
+    """Handle player death and restart option"""
+    print("\n=== GAME OVER ===")
+    print("Your adventure has ended...")
+    
+    while True:
+        choice = input("\nWould you like to restart? (yes/no): ").lower().strip()
+        if choice in ['yes', 'y']:
+            print("\nRestarting game...")
+            # Reset all game state variables
+            player_floor = 1
+            player_x = 0
+            player_y = 0
+            player_hp = 50
+            player_max_hp = 50
+            player_stamina = 100
+            player_max_stamina = 100
+            player_mana = 50
+            player_max_mana = 50
+            player_money = 0
+            player_potions = 0
+            stamina_potions = 0
+            mana_potions = 0
+            waypoint_scrolls = 0
+            mysterious_keys = 0
+            golden_keys = 0
+            unlocked_floors = 1
+            waypoints = []
+            discovered_enemies = {}
+            learned_spells = []
+            spell_scrolls = 0
+            using_fists = True
+            inventory = []
+            armor_inventory = []
+            equipped_armor = None
+            armor_broken = 0
+            
+            # Clear any save file
+            if os.path.exists(SAVE_FILE):
+                os.remove(SAVE_FILE)
+                print("Save file cleared for fresh start!")
+            
+            print("New character created! Starting fresh adventure...")
+            print("=" * 50)
+            return True  # Return True to indicate restart
+        elif choice in ['no', 'n']:
+            print("Thanks for playing! Goodbye!")
+            return False  # Return False to indicate exit
+        else:
+            print("Please answer 'yes' or 'no'.")
+
 def main():
     global worlds, player_floor, player_x, player_y, inventory, armor_inventory, equipped_armor
     global player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana
@@ -63,6 +114,7 @@ def main():
 
         if command == "quit":
             print("Game over!")
+            print("Thanks for playing!")
             break
 
         # Add your command handlers here
@@ -427,7 +479,12 @@ def main():
                     
                     if player_hp <= 0:
                         print("You have been defeated!")
-                        break
+                        if handle_player_death():
+                            # Player chose to restart, continue with fresh game
+                            continue
+                        else:
+                            # Player chose to exit
+                            return
             else:
                 print("There's no enemy here to attack.")
         
