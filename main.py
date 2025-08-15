@@ -44,6 +44,17 @@ def handle_player_death():
             equipped_armor = None
             armor_broken = 0
             
+            # Auto-save current state before clearing (in case they want to recover)
+            try:
+                from save_load import auto_save_game
+                auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
+                             player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
+                             player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
+                             unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
+                print("(Auto-saved current state before restart!)")
+            except Exception as e:
+                print(f"(Auto-save failed: {e})")
+            
             # Clear any save files for fresh start
             from save_load import list_save_files, delete_save
             save_files = list_save_files()
@@ -70,6 +81,14 @@ def main():
     global learned_spells, spell_scrolls, using_fists
     global attack_count, critical_hits, total_damage_dealt, total_damage_taken, armor_broken
     global discovered_uniques
+    
+    # Initialize bug reporting system
+    try:
+        from bug_reporting import setup_global_exception_handler
+        setup_global_exception_handler()
+        print("🐛 Bug reporting system initialized")
+    except Exception as e:
+        print(f"⚠️  Bug reporting system failed to initialize: {e}")
     
     # Initialize unique items system
     from unique_items import load_unique_items
@@ -144,6 +163,17 @@ def main():
         command = input("\nWhat do you do? ").lower().strip()
 
         if command == "quit":
+            # Auto-save before quitting
+            try:
+                from save_load import auto_save_game
+                auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
+                             player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
+                             player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
+                             unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
+                print("(Auto-saved before exit!)")
+            except Exception as e:
+                print(f"(Auto-save failed: {e})")
+            
             print("Game over!")
             print("Thanks for playing!")
             break
@@ -231,6 +261,21 @@ def main():
                             print(f"Please enter a number between 1 and {len(save_files)}")
                     else:
                         print("Please enter a valid number or press Enter to cancel.")
+        elif command == "bug_report":
+            try:
+                from bug_reporting import handle_error_with_report, capture_game_state
+                # Create a test error for demonstration
+                test_error = Exception("This is a test bug report to demonstrate the system")
+                test_traceback = "Traceback (most recent call last):\n  File 'test', line 1, in <module>\n    test_function()\nNameError: name 'test_function' is not defined"
+                game_state = capture_game_state()
+                
+                handle_error_with_report(
+                    test_error, Exception, test_error, test_traceback, game_state
+                )
+                print("\n✅ Test bug report generated successfully!")
+                print("💡 This was just a test - no actual error occurred")
+            except Exception as e:
+                print(f"❌ Failed to generate test bug report: {e}")
         elif command == "guide":
             show_help()
         elif command.startswith("guide "):
@@ -379,6 +424,28 @@ def main():
             if success:
                 player_x = new_x
                 player_y = new_y
+                
+                # Auto-save every 3 rooms moved
+                from save_load import auto_save_game
+                
+                # Increment room counter for auto-save
+                if not hasattr(main, 'room_count'):
+                    main.room_count = 0
+                main.room_count += 1
+                
+                if main.room_count >= 3:
+                    try:
+                        auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, 
+                                     new_x, new_y, player_hp, player_max_hp, player_stamina, 
+                                     player_max_stamina, player_mana, player_max_mana, player_money, 
+                                     player_potions, stamina_potions, mana_potions, mysterious_keys, 
+                                     golden_keys, unlocked_floors, waypoints, waypoint_scrolls, 
+                                     discovered_enemies, learned_spells, spell_scrolls, using_fists)
+                        print("(Auto-saved!)")
+                        main.room_count = 0  # Reset counter
+                    except Exception as e:
+                        print(f"(Auto-save failed: {e})")
+                        main.room_count = 0  # Reset counter even on failure
         
         # Combat commands
         elif command == "attack":

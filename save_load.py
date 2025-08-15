@@ -27,6 +27,11 @@ def list_save_files():
     ensure_save_directory()
     save_files = []
     
+    # Check for auto-save (slot 0)
+    auto_save_path = os.path.join(SAVE_DIR, "auto_save.json")
+    if os.path.exists(auto_save_path):
+        save_files.append(("auto_save", "Auto Save (Most Recent)"))
+    
     # Check for default save
     default_path = os.path.join(SAVE_DIR, DEFAULT_SAVE)
     if os.path.exists(default_path):
@@ -35,8 +40,9 @@ def list_save_files():
     # Check for named saves
     pattern = os.path.join(SAVE_DIR, "*.json")
     for file_path in glob.glob(pattern):
-        if os.path.basename(file_path) != DEFAULT_SAVE:
-            save_name = os.path.splitext(os.path.basename(file_path))[0]
+        filename = os.path.basename(file_path)
+        if filename not in ["auto_save.json", DEFAULT_SAVE]:
+            save_name = os.path.splitext(filename)[0]
             save_name = save_name.replace('_', ' ')
             save_files.append((save_name, save_name.title()))
     
@@ -109,6 +115,16 @@ def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, pla
         print(f"Game saved as '{save_name}'!")
     
     return save_path
+
+def auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
+                   player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
+                   player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
+                   unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists):
+    """Auto-save the game (overwrites previous auto-save)"""
+    return save_game("auto_save", worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
+                     player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
+                     player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
+                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
 
 def load_game(save_name=None):
     """Load a game from a specific save file"""

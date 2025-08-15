@@ -337,6 +337,7 @@ def show_utility_help():
     print("  load - Load your saved game")
     print("  saves - List and view all save files")
     print("  delete_save - Delete a specific save file")
+    print("  bug_report - Generate a manual bug report for testing")
     print("  guide - Show this help system")
     print("  quit - Exit the game")
     print("\nSave System:")
@@ -344,6 +345,8 @@ def show_utility_help():
     print("  - Press Enter for default save, or type a custom name")
     print("  - Use 'saves' to see all your save files")
     print("  - Use 'delete_save' to remove unwanted saves")
+    print("  - Auto-save: Every 3 rooms moved, on quit, and before restart")
+    print("  - Auto-save slot: Slot 0 (Auto Save - Most Recent)")
     print("\nUtility Tips:")
     print("  - Use waypoints to mark important locations (max 10)")
     print("  - Waypoint scrolls can teleport you to any waypoint, even during combat")
@@ -365,7 +368,7 @@ def show_all_help():
     print("Progression:")
     print("  take_key, drop_mysterious_key, open, loot, buy, repair")
     print("Utility:")
-    print("  map, waypoint, view, delete, teleport, bestiary, save, load, saves, delete_save, guide, quit")
+    print("  map, waypoint, view, delete, teleport, bestiary, save, load, saves, delete_save, bug_report, guide, quit")
     print("==================")
 
 def show_developer_help():

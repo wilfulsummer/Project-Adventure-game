@@ -19,9 +19,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Python cache files
-__pycache__/
-*.py[cod]
-*$py.class
+# Bug reports (files ignored, folder committed for transparency)
+bug_reports/*.txt
+bug_reports/*.log
 
  
