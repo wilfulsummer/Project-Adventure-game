@@ -7,6 +7,8 @@ A text-based adventure game with combat, exploration, and progression systems. F
 ### 🚀 **EASIEST WAY - Just Double-Click!**
 **Simply double-click `Adventure Game.exe` in the `dist` folder!**
 
+**Alternative:** Double-click `Play Game.bat` if you prefer a batch file.
+
 ### 💻 **Command Line Way:**
 **To start the game, run this command in your terminal:**
 ```bash
@@ -168,6 +170,7 @@ python -m PyInstaller --onefile --name "Adventure Game" --console main.py
 
 **🎮 PLAY THE GAME:**
 - `dist/Adventure Game.exe` - **EASIEST WAY TO PLAY!** Just double-click this file!
+- `Play Game.bat` - **Alternative launcher** - Double-click to run the game
 - `main.py` - **MAIN GAME FILE - Run this to play!** This is the entry point that starts the game.
 
 **🔧 CORE GAME FILES:**
