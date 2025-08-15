@@ -2,7 +2,42 @@
 
 A text-based adventure game with combat, exploration, and progression systems. Fight enemies, collect items, explore multiple floors, and discover secrets in this immersive RPG experience.
 
+## 🎯 **HOW TO PLAY - READ THIS FIRST!**
+
+### 🚀 **EASIEST WAY - Just Double-Click!**
+**Simply double-click `Adventure Game.exe` in the `dist` folder!**
+
+### 💻 **Command Line Way:**
+**To start the game, run this command in your terminal:**
+```bash
+python main.py
+```
+
+**NOT** `python adventure_game.py` - that's the wrong file!
+
+### 📋 **Quick Commands:**
+```bash
+# EASIEST: Double-click Adventure Game.exe
+
+# Command line way:
+python main.py
+
+# Run tests to make sure everything works
+python run_tests.py
+
+# Check Python version (should be 3.7+)
+python --version
+```
+
 ## 🚀 Quick Start
+
+### 🎯 **What is the .exe file?**
+
+The `Adventure Game.exe` file is a **standalone executable** that contains everything needed to run the game:
+- ✅ **No Python installation required** - Everything is bundled inside
+- ✅ **All game files included** - No need to worry about missing files
+- ✅ **Just double-click to play** - Opens terminal and starts the game automatically
+- ✅ **Portable** - Can be moved to other computers (Windows only)
 
 ### Prerequisites
 
@@ -35,20 +70,22 @@ A text-based adventure game with combat, exploration, and progression systems. F
    cd path/to/Adventure_game.py
    ```
 
-3. **Run the Game**:
+3. **Run the Game** (IMPORTANT - Use the correct file!):
    ```bash
-   python adventure_game.py
+   python main.py
    ```
    or
    ```bash
-   python3 adventure_game.py
+   python3 main.py
    ```
+
+   **⚠️  WARNING: Do NOT run `python adventure_game.py` - that's the wrong file!**
 
 ## 🎮 First Time Playing
 
 ### Getting Started
 
-1. **Start the Game**: Run `python adventure_game.py` in your terminal
+1. **Start the Game**: Run `python main.py` in your terminal
 
 2. **You'll Start On Floor 1**: You begin in a room with a training dummy at coordinates (0,0)
 
@@ -116,15 +153,42 @@ A text-based adventure game with combat, exploration, and progression systems. F
 python run_tests.py
 ```
 
-### File Structure
-- `adventure_game.py` - Main game file
-- `command_handlers.py` - Command processing
-- `constants.py` - Game constants and configurations
-- `game_state.py` - Game state management
-- `save_load.py` - Save/load functionality
-- `ui_functions.py` - User interface functions
-- `unique_items.py` - Unique item system
-- `world_generation.py` - World and room generation
+### Creating the .exe File
+```bash
+# Install PyInstaller
+pip install pyinstaller
+
+# Create the executable
+python -m PyInstaller --onefile --name "Adventure Game" --console main.py
+
+# The .exe will be created in the dist/ folder
+```
+
+### File Structure & Purpose
+
+**🎮 PLAY THE GAME:**
+- `dist/Adventure Game.exe` - **EASIEST WAY TO PLAY!** Just double-click this file!
+- `main.py` - **MAIN GAME FILE - Run this to play!** This is the entry point that starts the game.
+
+**🔧 CORE GAME FILES:**
+- `adventure_game.py` - Core game logic, combat mechanics, and game systems
+- `command_handlers.py` - Processes player commands and input
+- `constants.py` - Game constants, configurations, and settings
+- `game_state.py` - Manages player stats, inventory, and game state
+- `save_load.py` - Handles saving and loading game progress
+- `ui_functions.py` - User interface functions, help system, and display
+- `unique_items.py` - Unique item system and special equipment
+- `world_generation.py` - Generates the game world, rooms, and enemies
+
+**🚀 MODDING SYSTEM:**
+- `mods/` - Modding system with developer tools
+  - `mods.json` - Configuration for enabled mods
+  - `developer_mod/` - Developer tools for testing and debugging
+  - `example_mod/` - Example mod showing how to create mods
+
+**🧪 TESTING:**
+- `run_tests.py` - Run all unit tests to verify game functionality
+- `test_adventure_game.py` - Comprehensive test suite (39 tests)
 
 ## 🐛 Troubleshooting
 
@@ -137,15 +201,26 @@ python run_tests.py
 **"No module named 'random'"**
 - This is a built-in module, should work with any Python 3.x installation
 
-**Game crashes or freezes**
+**"I ran adventure_game.py but nothing happened"**
+- **WRONG FILE!** Use `python main.py` instead
+- `adventure_game.py` contains game logic but doesn't start the game
+- **EASIEST SOLUTION:** Just double-click `Adventure Game.exe` instead!
+
+**"Game crashes or freezes"**
 - Try running the game in a fresh terminal
 - Check that all game files are in the same folder
+- Make sure you're running `python main.py`
+
+**"I can't find the game files"**
+- Download the entire project folder, not just individual files
+- All files must be in the same directory for the game to work
 
 ### Getting Help
 
 - Use the `guide` command in-game for detailed help
 - Check the test results to ensure the game is working properly
 - All game mechanics are thoroughly tested with 39 unit tests
+- If you're still confused, run `python run_tests.py` to verify everything works
 
 ## 📊 Test Coverage
 
