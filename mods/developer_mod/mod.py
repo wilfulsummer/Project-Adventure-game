@@ -265,15 +265,18 @@ def register_mod():
     for hook_name, hook_func in hooks.items():
         register_hook(f"developer_mod.{hook_name}", hook_func)
     
-    # Register guide section
-    guide_data = {
-        "name": "developer",
-        "title": "Developer Tools",
-        "description": "Developer tools for testing and debugging",
-        "function": show_developer_guide,
-        "requires_permission": True
+    # Register guide section using the new system
+    guides = {
+        "guide": {
+            "name": "developer",
+            "title": "Developer Tools",
+            "description": "Developer tools for testing and debugging",
+            "function": show_developer_guide,
+            "requires_permission": True
+        }
     }
-    register_guide("developer_mod.guide", guide_data)
+    
+    # The mod system will automatically load guides from the guides attribute
 
 # Auto-register when mod is loaded
 register_mod()

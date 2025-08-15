@@ -10,6 +10,9 @@ Modders can:
 - Modify game mechanics
 - Add new room types
 - Add new spells
+- Add custom guide sections
+
+This version is completely localized to avoid conflicts with multiple game versions.
 """
 
 import os
@@ -19,7 +22,7 @@ from typing import Dict, List, Any, Optional
 import sys # Added for exec-based loading
 
 class ModLoader:
-    """Main mod loading system"""
+    """Main mod loading system - completely localized"""
     
     def __init__(self):
         self.loaded_mods = {}
@@ -34,8 +37,21 @@ class ModLoader:
             'hooks': {},
             'guides': {}
         }
-        self.mods_directory = "mods"
+        
+        # Get the absolute path to THIS mod loader file
+        self.this_file_path = os.path.abspath(__file__)
+        # Get the mods directory from THIS file's location
+        self.mods_directory = os.path.dirname(self.this_file_path)
+        # Get the game root directory (parent of mods)
+        self.game_root = os.path.dirname(self.mods_directory)
+        
         self.enabled_mods = []
+        
+        # Create a unique identifier for this game instance
+        self.instance_id = f"game_{os.path.basename(self.game_root)}_{hash(self.game_root)}"
+        
+        print(f"Mod Loader initialized for: {self.game_root}")
+        print(f"Instance ID: {self.instance_id}")
     
     def load_mods(self):
         """Load all available mods"""
@@ -47,7 +63,7 @@ class ModLoader:
             print(f"Created {self.mods_directory} directory")
             return
         
-        # Look for mod configuration
+        # Look for mod configuration in THIS mods directory
         mod_config_file = os.path.join(self.mods_directory, "mods.json")
         if os.path.exists(mod_config_file):
             try:
@@ -57,6 +73,9 @@ class ModLoader:
             except:
                 print("Warning: Could not load mods.json, no mods will be loaded")
                 return
+        else:
+            print(f"Warning: No mods.json found in {self.mods_directory}")
+            return
         
         # Load each enabled mod
         for mod_name in self.enabled_mods:
@@ -69,7 +88,7 @@ class ModLoader:
         mod_path = os.path.join(self.mods_directory, mod_name)
         
         if not os.path.exists(mod_path):
-            print(f"Warning: Mod '{mod_name}' not found")
+            print(f"Warning: Mod '{mod_name}' not found in {mod_path}")
             return
         
         # Look for mod.py file
@@ -110,7 +129,7 @@ class ModLoader:
         # Load enemies
         if hasattr(mod_module, 'enemies'):
             for enemy_id, enemy_data in mod_module.enemies.items():
-                self.mod_data['enemies'][f"{mod_module}.{enemy_id}"] = enemy_data
+                self.mod_data['enemies'][f"{mod_name}.{enemy_id}"] = enemy_data
         
         # Load weapons
         if hasattr(mod_module, 'weapons'):
@@ -141,6 +160,11 @@ class ModLoader:
         if hasattr(mod_module, 'hooks'):
             for hook_name, hook_func in mod_module.hooks.items():
                 self.mod_data['hooks'][f"{mod_name}.{hook_name}"] = hook_func
+        
+        # Load guides
+        if hasattr(mod_module, 'guides'):
+            for guide_name, guide_data in mod_module.guides.items():
+                self.mod_data['guides'][f"{mod_name}.{guide_name}"] = guide_data
     
     def get_unique_item(self, item_id: str) -> Optional[Dict[str, Any]]:
         """Get a unique item from mods"""
@@ -226,6 +250,16 @@ class ModLoader:
                 'commands': len([k for k in self.mod_data['commands'] if k.startswith(f"{mod_name}.")]),
             }
         return None
+    
+    def get_instance_info(self) -> Dict[str, Any]:
+        """Get information about this mod loader instance"""
+        return {
+            'instance_id': self.instance_id,
+            'game_root': self.game_root,
+            'mods_directory': self.mods_directory,
+            'this_file': self.this_file_path,
+            'loaded_mods_count': len(self.loaded_mods)
+        }
 
 # Global mod loader instance
 mod_loader = ModLoader()
