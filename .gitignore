@@ -1,8 +1,7 @@
 # Git ignore file itself
 .gitignore
 
-# Cursor IDE IDE rules file
-.cursorrules
+# Note: .cursorrules is intentionally committed for development guidelines
 
 # Save files and directories
 savegame.json
