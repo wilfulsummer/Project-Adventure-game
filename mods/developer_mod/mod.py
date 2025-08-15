@@ -216,8 +216,8 @@ commands = {
 def show_developer_guide():
     """Display developer tools guide section"""
     print("\n=== DEVELOPER TOOLS GUIDE ===")
-    print("⚠️  WARNING: These are developer tools for testing and debugging!")
-    print("⚠️  Use responsibly and only in development environments!")
+    print("WARNING: These are developer tools for testing and debugging!")
+    print("WARNING: Use responsibly and only in development environments!")
     print("\nCommands:")
     print("  dev_info - Show developer mod information and status")
     print("  dev_teleport <floor> <x> <y> - Teleport to any location")
