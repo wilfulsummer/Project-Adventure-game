@@ -23,6 +23,7 @@ def main():
     # Initialize mod system
     from mods.mod_loader import mod_loader
     mod_loader.load_mods()
+    mod_loader.call_startup_hooks()
     
     print("\n=== ADVENTURE GAME ===")
     print("Welcome to the Adventure Game!")
@@ -129,6 +130,33 @@ def main():
                 print("===================")
             else:
                 print("No mods are currently loaded.")
+        
+        # Handle mod commands
+        elif command.startswith("dev_"):
+            from mods.mod_loader import mod_loader
+            # Split command into parts
+            cmd_parts = command.split()
+            cmd_name = cmd_parts[0]
+            cmd_args = cmd_parts[1:] if len(cmd_parts) > 1 else []
+            
+            # Look for the command in loaded mods
+            mod_command = None
+            for mod_name in mod_loader.list_mods():
+                if mod_name == "developer_mod":
+                    # Import the developer mod to access its command handlers
+                    try:
+                        from mods.developer_mod.mod import admin_commands
+                        if cmd_name in admin_commands:
+                            mod_command = admin_commands[cmd_name]
+                            break
+                    except ImportError:
+                        continue
+            
+            if mod_command:
+                mod_command(cmd_args)
+            else:
+                print(f"Unknown developer command: {cmd_name}")
+                print("Type 'dev_info' for available developer commands.")
         
         # Movement commands
         elif command in ["north", "south", "east", "west"]:
