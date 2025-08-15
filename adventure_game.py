@@ -952,6 +952,15 @@ def show_help():
   print("  guide resources  - Potions, crystals, and resources")
   print("  guide progression - Keys, floors, and progression")
   print("  guide utility    - Map, waypoints, save/load")
+  
+  # Only show developer section if developer mod is loaded and enabled
+  try:
+    from mods.developer_mod.mod import is_developer_mode_enabled
+    if is_developer_mode_enabled():
+      print("  guide developer  - Developer tools and commands")
+  except ImportError:
+    pass  # Developer mod not loaded
+  
   print("  guide all        - Show all commands")
   print("==================")
 
@@ -1068,6 +1077,36 @@ def show_utility_help():
   print("  - The training dummy at (0,0) on Floor 1 can be attacked without losing durability")
   print("==================")
 
+def show_developer_help():
+  """Display developer tools help (only shown if developer mod is loaded)"""
+  print("\n=== DEVELOPER TOOLS HELP ===")
+  print("⚠️  WARNING: These are developer tools for testing and debugging!")
+  print("⚠️  Use responsibly and only in development environments!")
+  print("\nCommands:")
+  print("  dev_info - Show developer mod information and status")
+  print("  dev_teleport <floor> <x> <y> - Teleport to any location")
+  print("  dev_stats <stat> <value> - Modify player stats")
+  print("  dev_weapon <name> <damage> <durability> - Create custom weapon")
+  print("  dev_spawn <type> <name> - Spawn enemies, items, or equipment")
+  print("  dev_disable - Disable developer mode")
+  print("\nUsage Examples:")
+  print("  dev_teleport 3 15 20     - Move to Floor 3, coordinates (15,20)")
+  print("  dev_stats hp 100          - Set current HP to 100")
+  print("  dev_stats max_hp 200      - Set maximum HP to 200")
+  print("  dev_weapon 'Super Sword' 50 200 - Create weapon with 50 damage, 200 durability")
+  print("  dev_spawn enemy 'Dragon'  - Spawn a dragon enemy")
+  print("  dev_spawn weapon 'Laser'  - Spawn a laser weapon")
+  print("\nAvailable Stats:")
+  print("  hp, max_hp, stamina, max_stamina, mana, max_mana, money")
+  print("\nSpawn Types:")
+  print("  enemy, weapon, armor, item")
+  print("\nSecurity:")
+  print("  - Developer mode must be enabled at startup")
+  print("  - All commands check if developer mode is active")
+  print("  - Can be disabled anytime with 'dev_disable'")
+  print("  - Commands are isolated from normal gameplay")
+  print("==================")
+
 def show_mechanics_help():
   """Display core game mechanics help"""
   print("\n=== MECHANICS HELP ===")
@@ -1104,6 +1143,16 @@ def show_all_help():
   print("  take_key, drop_mysterious_key, use_key, open, loot, buy")
   print("Utility:")
   print("  map, waypoint, view, delete, teleport, bestiary, uniques, stats, materials, save, load, guide, quit")
+  
+  # Only show developer commands if developer mod is loaded and enabled
+  try:
+    from mods.developer_mod.mod import is_developer_mode_enabled
+    if is_developer_mode_enabled():
+      print("Developer:")
+      print("  dev_info, dev_teleport, dev_stats, dev_weapon, dev_spawn, dev_disable")
+  except ImportError:
+    pass  # Developer mod not loaded
+  
   print("==================")
 
 def show_stats():

@@ -101,11 +101,33 @@ def main():
                 show_progression_help()
             elif section == "utility":
                 show_utility_help()
+            elif section == "developer":
+                # Only show developer help if developer mod is loaded and enabled
+                try:
+                    from mods.developer_mod.mod import is_developer_mode_enabled
+                    if is_developer_mode_enabled():
+                        show_developer_help()
+                    else:
+                        print("Developer mode is not enabled.")
+                        print("Enable developer mode at startup to access developer tools.")
+                except ImportError:
+                    print("Developer mod is not loaded.")
+                    print("Developer tools are not available.")
             elif section == "all":
                 show_all_help()
             else:
                 print(f"Unknown guide section: '{section}'")
-                print("Available sections: combat, movement, items, resources, progression, utility, all")
+                available_sections = ["combat", "movement", "items", "resources", "progression", "utility", "all"]
+                
+                # Only add developer section if developer mod is loaded and enabled
+                try:
+                    from mods.developer_mod.mod import is_developer_mode_enabled
+                    if is_developer_mode_enabled():
+                        available_sections.insert(-1, "developer")  # Insert before "all"
+                except ImportError:
+                    pass
+                
+                print(f"Available sections: {', '.join(available_sections)}")
         elif command == "map":
             show_map(player_floor, player_x, player_y, waypoints)
         elif command == "bestiary":
