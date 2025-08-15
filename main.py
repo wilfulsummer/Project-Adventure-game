@@ -44,10 +44,14 @@ def handle_player_death():
             equipped_armor = None
             armor_broken = 0
             
-            # Clear any save file
-            if os.path.exists(SAVE_FILE):
-                os.remove(SAVE_FILE)
-                print("Save file cleared for fresh start!")
+            # Clear any save files for fresh start
+            from save_load import list_save_files, delete_save
+            save_files = list_save_files()
+            if save_files:
+                print("Clearing save files for fresh start...")
+                for save_name, _ in save_files:
+                    delete_save(save_name)
+                print("All save files cleared!")
             
             print("New character created! Starting fresh adventure...")
             print("=" * 50)
@@ -80,8 +84,16 @@ def main():
     print("Welcome to the Adventure Game!")
     print("Type 'guide' to see available info on how to play!")
 
-    if os.path.exists(SAVE_FILE):
-        answer = input("Load previous save? (yes/no/delete): ").lower()
+    # Check for existing saves
+    from save_load import list_save_files
+    save_files = list_save_files()
+    
+    if save_files:
+        print("\nExisting save files found!")
+        for i, (file_name, display_name) in enumerate(save_files, 1):
+            print(f"  {i}. {display_name}")
+        
+        answer = input("\nLoad previous save? (yes/no/delete): ").lower()
         if answer == "yes":
             loaded_data = load_game()
             if loaded_data:
@@ -96,12 +108,31 @@ def main():
                     ui_discovered_uniques.update(loaded_data["discovered_uniques"])
                     print("Unique items progress restored!")
         elif answer == "delete":
-            confirm = input("Are you sure you want to delete the save file? (yes/no): ").lower()
-            if confirm == "yes":
-                os.remove(SAVE_FILE)
-                print("Save file deleted!")
-            else:
-                print("Save file deletion cancelled.")
+            print("\nSelect save file to delete:")
+            for i, (file_name, display_name) in enumerate(save_files, 1):
+                print(f"  {i}. {display_name}")
+            
+            while True:
+                try:
+                    choice = input(f"Enter number (1-{len(save_files)}) or press Enter to cancel: ").strip()
+                    if not choice:
+                        print("Delete cancelled.")
+                        break
+                    elif choice.isdigit():
+                        choice_num = int(choice)
+                        if 1 <= choice_num <= len(save_files):
+                            save_name = save_files[choice_num - 1][0]
+                            confirm = input(f"Are you sure you want to delete '{save_name}'? (yes/no): ").lower().strip()
+                            if confirm in ['yes', 'y']:
+                                from save_load import delete_save
+                                delete_save(save_name)
+                            break
+                        else:
+                            print(f"Please enter a number between 1 and {len(save_files)}")
+                    else:
+                        print("Please enter a valid number or press Enter to cancel.")
+                except ValueError:
+                    print("Please enter a valid number.")
 
     while True:
         current_room = get_room(player_floor, player_x, player_y, worlds, learned_spells)
@@ -121,7 +152,10 @@ def main():
         # This is where you'll implement all the game logic
         # For now, just a basic structure
         elif command == "save":
-            save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
+            save_name = input("Enter save name (or press Enter for default): ").strip()
+            if not save_name:
+                save_name = "default"
+            save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                      player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                      player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
                      unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
@@ -137,6 +171,66 @@ def main():
                     ui_discovered_uniques.clear()
                     ui_discovered_uniques.update(loaded_data["discovered_uniques"])
                     print("Unique items progress restored!")
+        
+        elif command == "saves":
+            from save_load import list_save_files, show_save_info
+            save_files = list_save_files()
+            
+            if not save_files:
+                print("No save files found.")
+            else:
+                print("\nAvailable save files:")
+                for i, (file_name, display_name) in enumerate(save_files, 1):
+                    print(f"  {i}. {display_name}")
+                
+                while True:
+                    choice = input("\nEnter save number to view info, 'all' to show all info, or press Enter to continue: ").strip()
+                    
+                    if not choice:
+                        break
+                    elif choice.lower() == "all":
+                        for file_name, _ in save_files:
+                            show_save_info(file_name)
+                        break
+                    elif choice.isdigit():
+                        choice_num = int(choice)
+                        if 1 <= choice_num <= len(save_files):
+                            show_save_info(save_files[choice_num - 1][0])
+                            break
+                        else:
+                            print(f"Please enter a number between 1 and {len(save_files)}")
+                    else:
+                        print("Please enter a valid number, 'all', or press Enter to continue.")
+        
+        elif command == "delete_save":
+            from save_load import list_save_files, delete_save
+            save_files = list_save_files()
+            
+            if not save_files:
+                print("No save files found.")
+            else:
+                print("\nAvailable save files:")
+                for i, (file_name, display_name) in enumerate(save_files, 1):
+                    print(f"  {i}. {display_name}")
+                
+                while True:
+                    choice = input("\nEnter save number to delete, or press Enter to cancel: ").strip()
+                    
+                    if not choice:
+                        print("Delete cancelled.")
+                        break
+                    elif choice.isdigit():
+                        choice_num = int(choice)
+                        if 1 <= choice_num <= len(save_files):
+                            save_name = save_files[choice_num - 1][0]
+                            confirm = input(f"Are you sure you want to delete '{save_name}'? (yes/no): ").lower().strip()
+                            if confirm in ['yes', 'y']:
+                                delete_save(save_name)
+                            break
+                        else:
+                            print(f"Please enter a number between 1 and {len(save_files)}")
+                    else:
+                        print("Please enter a valid number or press Enter to cancel.")
         elif command == "guide":
             show_help()
         elif command.startswith("guide "):
