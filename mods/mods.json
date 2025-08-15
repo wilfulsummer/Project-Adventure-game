@@ -1,0 +1,11 @@
+{
+    "enabled_mods": [
+        "example_mod",
+        "developer_mod"
+    ],
+    "mod_settings": {
+        "auto_reload": false,
+        "debug_mode": false
+    },
+    "description": "Configuration file for Adventure Game mods. Add mod names to enabled_mods to load them."
+}

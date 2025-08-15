@@ -11,8 +11,13 @@ saves/
 # Unique items tracking (should not be tracked by git)
 unique_items.json
 
-# Mods directory (user-created content)
-mods/
+# Mods directory (intentionally committed for other developers to learn from)
+# mods/ - REMOVED: This directory is now committed for educational purposes
+
+# Python cache files (should always be ignored)
+__pycache__/
+*.py[cod]
+*$py.class
 
 # Python cache files
 __pycache__/
