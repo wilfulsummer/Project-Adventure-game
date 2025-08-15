@@ -27,8 +27,14 @@ This folder contains automatically generated bug reports when errors occur in th
 ## For Players:
 - Reports are automatically generated
 - You can find them in this folder
-- Include them when reporting bugs to developers
-- They help developers fix issues faster
+- **To report a bug:**
+  1. Go to the game's GitHub repository: https://github.com/wilfulsummer/Project-Adventure-game
+  2. Click on the "Issues" tab
+  3. Click "New Issue" or "Create Issue"
+  4. Describe what you were doing when the error occurred
+  5. **Attach the bug report file** from this folder
+  6. Include any additional details about your game progress
+- This helps developers fix issues faster and improve the game
 
 ## For Developers:
 - Check traceback for error location
