@@ -102,7 +102,7 @@ def main():
             elif section == "utility":
                 show_utility_help()
             elif section == "developer":
-                # Only show developer help if developer mod is loaded and enabled
+                # Show developer help if developer mod is loaded and enabled
                 try:
                     from mods.developer_mod.mod import is_developer_mode_enabled
                     if is_developer_mode_enabled():
@@ -116,18 +116,56 @@ def main():
             elif section == "all":
                 show_all_help()
             else:
-                print(f"Unknown guide section: '{section}'")
-                available_sections = ["combat", "movement", "items", "resources", "progression", "utility", "all"]
-                
-                # Only add developer section if developer mod is loaded and enabled
+                # Check if this is a mod guide section
                 try:
-                    from mods.developer_mod.mod import is_developer_mode_enabled
-                    if is_developer_mode_enabled():
-                        available_sections.insert(-1, "developer")  # Insert before "all"
+                    from mods.mod_loader import mod_loader
+                    mod_guides = mod_loader.get_mod_guides()
+                    
+                    for guide_id, guide_data in mod_guides.items():
+                        if guide_data.get('name') == section:
+                            mod_name = guide_id.split('.')[0]
+                            
+                            # Check if guide requires permission and if it's granted
+                            requires_permission = guide_data.get('requires_permission', False)
+                            if requires_permission:
+                                if mod_name == "developer_mod":
+                                    try:
+                                        from mods.developer_mod.mod import is_developer_mode_enabled
+                                        if not is_developer_mode_enabled():
+                                            print(f"Access to '{section}' guide requires permission.")
+                                            print("Enable developer mode to access this guide.")
+                                            return
+                                    except ImportError:
+                                        print(f"Could not verify permission for '{section}' guide.")
+                                        return
+                            
+                            # Show the guide
+                            guide_function = guide_data.get('function')
+                            if guide_function and callable(guide_function):
+                                guide_function()
+                                return
+                            else:
+                                print(f"Guide '{section}' is not properly configured.")
+                                return
+                    
+                    # If we get here, no mod guide was found
+                    print(f"Unknown guide section: '{section}'")
+                    available_sections = ["combat", "movement", "items", "resources", "progression", "utility", "all"]
+                    
+                    # Add mod guide sections
+                    try:
+                        for guide_id, guide_data in mod_guides.items():
+                            guide_name = guide_data.get('name', 'unknown')
+                            if guide_name not in available_sections:
+                                available_sections.insert(-1, guide_name)
+                    except:
+                        pass
+                    
+                    print(f"Available sections: {', '.join(available_sections)}")
+                    
                 except ImportError:
-                    pass
-                
-                print(f"Available sections: {', '.join(available_sections)}")
+                    print(f"Unknown guide section: '{section}'")
+                    print("Available sections: combat, movement, items, resources, progression, utility, all")
         elif command == "map":
             show_map(player_floor, player_x, player_y, waypoints)
         elif command == "bestiary":
