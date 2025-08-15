@@ -237,16 +237,22 @@ def main():
             section = command[6:].lower().strip()
             if section == "combat":
                 show_combat_help()
+                return
             elif section == "movement":
                 show_movement_help()
+                return
             elif section == "items":
                 show_items_help()
+                return
             elif section == "resources":
                 show_resources_help()
+                return
             elif section == "progression":
                 show_progression_help()
+                return
             elif section == "utility":
                 show_utility_help()
+                return
             elif section == "developer":
                 # Show developer help if developer mod is loaded and enabled
                 try:
@@ -256,11 +262,14 @@ def main():
                     else:
                         print("Developer mode is not enabled.")
                         print("Enable developer mode at startup to access developer tools.")
+                    return
                 except ImportError:
                     print("Developer mod is not loaded.")
                     print("Developer tools are not available.")
+                    return
             elif section == "all":
                 show_all_help()
+                return
             else:
                 # Check if this is a mod guide section
                 try:
@@ -487,8 +496,12 @@ def main():
                         
                         # Daggers get bonus crit chance and damage
                         if weapon_name == "Dagger":
-                            crit_chance += 0.15  # +15% chance (total 20%)
+                            crit_chance += 0.075  # +7.5% chance (total 12.5%)
                             crit_multiplier = 2.6  # 2.6x damage
+                        
+                        # Axes get bonus critical damage (heavier, more powerful hits)
+                        elif weapon_name == "Axe":
+                            crit_multiplier = 2.8  # 2.8x damage (higher than base 2.0x)
                         
                         # Roll for critical hit
                         if random.random() < crit_chance:
@@ -497,6 +510,8 @@ def main():
                             critical_hits += 1
                             if weapon_name == "Dagger":
                                 print(f"*** CRITICAL HIT! *** Your dagger strikes true! {original_damage} → {damage} damage!")
+                            elif weapon_name == "Axe":
+                                print(f"*** CRITICAL HIT! *** Your axe delivers a devastating blow! {original_damage} → {damage} damage!")
                             else:
                                 print(f"*** CRITICAL HIT! *** {original_damage} → {damage} damage!")
                         else:

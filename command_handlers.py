@@ -186,12 +186,18 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                     crit_chance += 0.15  # +15% chance (total 20%)
                     crit_multiplier = 2.6  # 2.6x damage
                 
+                # Axes get bonus critical damage (heavier, more powerful hits)
+                elif weapon_name == "Axe":
+                    crit_multiplier = 2.8  # 2.8x damage (higher than base 2.0x)
+                
                 # Roll for critical hit
                 if random.random() < crit_chance:
                     original_damage = damage
                     damage = int(damage * crit_multiplier)
                     if weapon_name == "Dagger":
                         print(f"*** CRITICAL HIT! *** Your dagger strikes true! {original_damage} → {damage} damage!")
+                    elif weapon_name == "Axe":
+                        print(f"*** CRITICAL HIT! *** Your axe delivers a devastating blow! {original_damage} → {damage} damage!")
                     else:
                         print(f"*** CRITICAL HIT! *** {original_damage} → {damage} damage!")
                 else:

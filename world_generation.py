@@ -18,8 +18,8 @@ def create_weapon(x, y):
     
     # Make staffs stronger but require mana
     if weapon_name == "Magic Staff":
-        damage = base_damage + damage_bonus + random.randint(1, 2)  # +1 to +2 extra damage
-        durability = base_durability + durability_bonus
+        damage = base_damage + damage_bonus + random.randint(1, 3)  # +1 to +3 extra damage
+        durability = base_durability + durability_bonus + random.randint(5, 8)  # +5 to +8 extra durability
         return {
             "name": weapon_name,
             "damage": damage,
@@ -29,10 +29,21 @@ def create_weapon(x, y):
             "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
         }
     elif weapon_name == "Spell Book":
-        durability = random.randint(15, 25) + durability_bonus
+        durability = random.randint(15, 25) + durability_bonus + random.randint(5, 8)  # +5 to +8 extra durability
         return {
             "name": weapon_name,
             "damage": "???",
+            "durability": durability,
+            "max_durability": durability
+        }
+    elif weapon_name == "Sword":
+        # Swords are versatile - good damage and durability for all situations
+        # +2-4 base damage and +3-5 durability bonus
+        damage = base_damage + damage_bonus + random.randint(2, 4)
+        durability = base_durability + durability_bonus + random.randint(3, 5)
+        return {
+            "name": weapon_name,
+            "damage": damage,
             "durability": durability,
             "max_durability": durability
         }
@@ -73,8 +84,8 @@ def create_chest_weapon(dist):
     
     # Make staffs stronger but require mana
     if weapon_name == "Magic Staff":
-        damage = base_damage + damage_bonus + random.randint(1, 2)  # +1 to +2 extra damage
-        durability = base_durability + durability_bonus
+        damage = base_damage + damage_bonus + random.randint(1, 3)  # +1 to +3 extra damage
+        durability = base_durability + durability_bonus + random.randint(5, 8)  # +5 to +8 extra durability
         return {
             "name": weapon_name,
             "damage": damage,
@@ -84,7 +95,7 @@ def create_chest_weapon(dist):
             "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
         }
     elif weapon_name == "Spell Book":
-        durability = random.randint(15, 25) + durability_bonus
+        durability = random.randint(15, 25) + durability_bonus + random.randint(5, 8)  # +5 to +8 extra durability
         return {
             "name": weapon_name,
             "damage": "???",
