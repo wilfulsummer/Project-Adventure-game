@@ -953,13 +953,30 @@ def show_help():
   print("  guide progression - Keys, floors, and progression")
   print("  guide utility    - Map, waypoints, save/load")
   
-  # Only show developer section if developer mod is loaded and enabled
+  # Show mod guide sections automatically
   try:
-    from mods.developer_mod.mod import is_developer_mode_enabled
-    if is_developer_mode_enabled():
-      print("  guide developer  - Developer tools and commands")
+    from mods.mod_loader import mod_loader
+    mod_guides = mod_loader.get_mod_guides()
+    for guide_id, guide_data in mod_guides.items():
+      mod_name = guide_id.split('.')[0]
+      guide_name = guide_data.get('name', 'unknown')
+      title = guide_data.get('title', 'Mod Guide')
+      description = guide_data.get('description', 'Mod guide section')
+      
+      # Check if guide requires permission and if it's granted
+      requires_permission = guide_data.get('requires_permission', False)
+      if requires_permission:
+        try:
+          if mod_name == "developer_mod":
+            from mods.developer_mod.mod import is_developer_mode_enabled
+            if not is_developer_mode_enabled():
+              continue  # Skip this guide if permission not granted
+        except ImportError:
+          continue  # Skip if can't check permission
+      
+      print(f"  guide {guide_name:<10} - {description}")
   except ImportError:
-    pass  # Developer mod not loaded
+    pass  # Mod system not available
   
   print("  guide all        - Show all commands")
   print("==================")
