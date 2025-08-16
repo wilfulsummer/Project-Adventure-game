@@ -168,6 +168,7 @@ def main():
                   player_level, player_xp, player_xp_to_next)
 
         command = input("\nWhat do you do? ").lower().strip()
+        print("=" * 50)  # Add separator line after command input
 
         if command == "quit":
             # Auto-save before quitting
