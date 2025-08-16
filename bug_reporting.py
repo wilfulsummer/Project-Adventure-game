@@ -113,6 +113,15 @@ def handle_error_with_report(error, error_type, error_value, traceback_info, gam
     print("\n💡 The game will attempt to continue. If problems persist, please restart.")
     return filepath
 
+def manual_bug_report(error, context="Unknown", game_state=None):
+    """Manually trigger a bug report for caught exceptions"""
+    error_type = type(error)
+    error_value = str(error)
+    traceback_info = ''.join(traceback.format_tb(error.__traceback__))
+    
+    print(f"\n🐛 Manual bug report triggered from: {context}")
+    return handle_error_with_report(error, error_type, error_value, traceback_info, game_state)
+
 def capture_game_state():
     """Capture current game state for bug reports"""
     try:
