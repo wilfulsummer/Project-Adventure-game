@@ -3,27 +3,53 @@
 
 # Note: .cursorrules is intentionally committed for development guidelines
 
-# Save files and directories
-savegame.json
+# Save files and user data
 saves/
-*.save
+*.json
 
-# Unique items tracking (should not be tracked by git)
-unique_items.json
-
-# Mods directory (intentionally committed for other developers to learn from)
-# mods/ - REMOVED: This directory is now committed for educational purposes
-
-# Python cache files (should always be ignored)
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Bug reports (files ignored, folder committed for transparency)
-bug_reports/*.txt
-bug_reports/*.log
-
-# Past bug reports (entire folder ignored - resolved issues)
+# Bug reports (archived)
 past_bug_reports/
+
+# Weird/corrupted files that shouldn't be tracked
+tatus
+et
+"ystem and auto-save functionality*"
+*357*
+*200*
+*242*
+
+# Test files (temporary)
+test_*.py
+TEST_*.md
+run_tests.py
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build artifacts
+build/
+dist/
+*.spec
 
  
