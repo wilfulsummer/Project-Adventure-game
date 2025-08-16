@@ -26,7 +26,7 @@ jobs:
         
     - name: Build executable
       run: |
-        pyinstaller --onefile --windowed --name "Adventure_Game" main.py
+        pyinstaller --onefile --console --name "Adventure_Game" main.py
         
     - name: Create release assets
       run: |
