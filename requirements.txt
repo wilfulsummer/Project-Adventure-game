@@ -1,0 +1,8 @@
+# Adventure Game Dependencies
+# Core dependencies for building the game executable
+
+# PyInstaller for creating the .exe
+pyinstaller>=5.0
+
+# Python standard library modules (included by default)
+# No additional packages needed for the core game
