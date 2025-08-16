@@ -33,7 +33,7 @@ jobs:
         mkdir release-assets
         copy dist\Adventure_Game.exe release-assets\
         copy README.md release-assets\
-        copy LICENSE release-assets\ 2>nul || echo "No LICENSE file found"
+        if exist LICENSE copy LICENSE release-assets\
         
     - name: Create Release
       uses: softprops/action-gh-release@v1
