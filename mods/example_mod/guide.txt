@@ -1,0 +1,21 @@
+example_mod
+Welcome to the Example Mod! This mod demonstrates how easy it is to add content to the game.
+
+NEW CONTENT:
+• Sword of Examples - A powerful unique weapon with 25 damage and 100 durability
+• Example Boss - A challenging boss enemy with 200 HP
+• Modded Weapon - A custom weapon with 15 damage
+• Modded Armor - Custom armor with 10 defense
+• Modded Spell - A powerful spell that costs 25 mana
+
+HOW TO USE:
+• The unique items will spawn naturally in the world
+• Bosses may appear in special rooms
+• Use 'example' command to test mod functionality
+
+MODDING TIPS:
+• Create a guide.txt file in your mod directory for automatic guide loading
+• Use a guides/ subdirectory for multiple guide sections
+• Guides are automatically loaded and accessible via 'guide <guide_name>'
+
+This system makes it incredibly easy to add helpful information for players!

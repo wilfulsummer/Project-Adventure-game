@@ -1,0 +1,24 @@
+enemies
+ENEMIES ADDED BY THIS MOD:
+
+EXAMPLE BOSS
+• HP: 200
+• Attack: 25
+• Type: Boss Enemy
+• Description: A boss created by modding
+• Drops: Sword of Examples (unique weapon)
+• Behavior: Blocks path until defeated
+
+COMBAT STRATEGY:
+• This boss has high HP but moderate attack power
+• Use your best weapons and armor
+• Consider using potions during the fight
+• The boss will drop a powerful unique weapon when defeated
+
+BOSS MECHANICS:
+• Bosses can be escaped from by moving away
+• They block your path until defeated
+• They provide better rewards than regular enemies
+• Use 'run' command if you need to retreat
+
+This mod adds challenging boss encounters to test your skills!

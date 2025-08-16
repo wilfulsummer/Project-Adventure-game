@@ -24,4 +24,24 @@ waypoints = {}  # Dictionary to store waypoints: {name: (floor, x, y)}
 discovered_enemies = set()  # Track which enemies have been defeated
 learned_spells = []  # List of learned spells in order
 spell_scrolls = {}  # Dictionary of spell scrolls: {spell_name: count}
-using_fists = False  # Track if player is using fists instead of weapons 
+using_fists = False  # Track if player is using fists instead of weapons
+
+# --- Leveling System ---
+player_level = 1
+player_xp = 0
+player_xp_to_next = 100
+max_level = 100
+
+# --- Statistics Tracking ---
+enemies_defeated = 0
+bosses_defeated = 0
+total_damage_dealt = 0
+total_damage_taken = 0
+critical_hits = 0
+attack_count = 0
+rooms_explored = 0
+floors_visited = set()
+move_count = 0
+items_collected = 0
+weapons_broken = 0
+gold_earned = 0 

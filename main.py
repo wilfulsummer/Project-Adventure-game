@@ -50,7 +50,10 @@ def handle_player_death():
                 auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                              player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                              player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-                             unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
+                             unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
+                             player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated, total_damage_dealt,
+                             total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
+                             items_collected, weapons_broken, gold_earned)
                 print("(Auto-saved current state before restart!)")
             except Exception as e:
                 print(f"(Auto-save failed: {e})")
@@ -81,6 +84,9 @@ def main():
     global learned_spells, spell_scrolls, using_fists
     global attack_count, critical_hits, total_damage_dealt, total_damage_taken, armor_broken
     global discovered_uniques
+    global player_level, player_xp, player_xp_to_next
+    global enemies_defeated, bosses_defeated, rooms_explored, floors_visited, move_count
+    global items_collected, weapons_broken, gold_earned
     
     # Initialize bug reporting system
     try:
@@ -158,7 +164,8 @@ def main():
         show_room(current_room, player_floor, player_x, player_y, inventory, player_hp, player_max_hp,
                   player_stamina, player_max_stamina, player_mana, player_max_mana, player_money,
                   player_potions, stamina_potions, mana_potions, waypoint_scrolls, mysterious_keys,
-                  golden_keys, equipped_armor, spell_scrolls, learned_spells, discovered_enemies, unlocked_floors)
+                  golden_keys, equipped_armor, spell_scrolls, learned_spells, discovered_enemies, unlocked_floors,
+                  player_level, player_xp, player_xp_to_next)
 
         command = input("\nWhat do you do? ").lower().strip()
 
@@ -169,7 +176,10 @@ def main():
                 auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                              player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                              player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-                             unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
+                             unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
+                             player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated, total_damage_dealt,
+                             total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
+                             items_collected, weapons_broken, gold_earned)
                 print("(Auto-saved before exit!)")
             except Exception as e:
                 print(f"(Auto-save failed: {e})")
@@ -188,7 +198,10 @@ def main():
             save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                      player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                      player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
+                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
+                     player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated, total_damage_dealt,
+                     total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
+                     items_collected, weapons_broken, gold_earned)
         elif command == "load":
             loaded_data = load_game()
             if loaded_data:
@@ -201,6 +214,29 @@ def main():
                     ui_discovered_uniques.clear()
                     ui_discovered_uniques.update(loaded_data["discovered_uniques"])
                     print("Unique items progress restored!")
+                
+                # Update leveling system with loaded data
+                if "player_level" in loaded_data:
+                    player_level = loaded_data["player_level"]
+                    player_xp = loaded_data["player_xp"]
+                    player_xp_to_next = loaded_data["player_xp_to_next"]
+                    print(f"Leveling progress restored! Level {player_level}")
+                
+                # Update stats with loaded data
+                if "enemies_defeated" in loaded_data:
+                    enemies_defeated = loaded_data["enemies_defeated"]
+                    bosses_defeated = loaded_data["bosses_defeated"]
+                    total_damage_dealt = loaded_data["total_damage_dealt"]
+                    total_damage_taken = loaded_data["total_damage_taken"]
+                    critical_hits = loaded_data["critical_hits"]
+                    attack_count = loaded_data["attack_count"]
+                    rooms_explored = loaded_data["rooms_explored"]
+                    floors_visited = set(loaded_data.get("floors_visited", []))
+                    move_count = loaded_data["move_count"]
+                    items_collected = loaded_data["items_collected"]
+                    weapons_broken = loaded_data["weapons_broken"]
+                    gold_earned = loaded_data["gold_earned"]
+                    print("Statistics restored!")
         
         elif command == "saves":
             from save_load import list_save_files, show_save_info
@@ -375,6 +411,74 @@ def main():
             from unique_items import show_unique_collection
             show_unique_collection()
         
+        elif command == "level":
+            try:
+                from leveling_system import get_level_progress, get_level_bonuses
+                
+                current_xp, xp_needed, progress = get_level_progress(player_xp, player_level)
+                total_hp_bonus, total_max_hp_bonus = get_level_bonuses(player_level)
+                
+                print(f"\n=== LEVEL STATUS ===")
+                print(f"Level: {player_level}/100")
+                print(f"XP: {current_xp}/{xp_needed}")
+                print(f"Progress: {progress:.1f}%")
+                
+                if player_level >= 100:
+                    print("🏆 MAXIMUM LEVEL REACHED!")
+                else:
+                    print(f"XP to next level: {xp_needed - current_xp}")
+                
+                print(f"\nLevel Bonuses:")
+                print(f"  +{total_hp_bonus} current HP")
+                print(f"  +{total_max_hp_bonus} max HP")
+                print(f"  Total HP: {player_hp}/{player_max_hp}")
+                print("==================")
+                
+            except ImportError:
+                print("Leveling system not available.")
+        
+        elif command == "stats":
+            print(f"\n=== DETAILED STATISTICS ===")
+            print(f"Combat Stats:")
+            print(f"  Enemies Defeated: {enemies_defeated}")
+            print(f"  Bosses Defeated: {bosses_defeated}")
+            print(f"  Total Damage Dealt: {total_damage_dealt}")
+            print(f"  Total Damage Taken: {total_damage_taken}")
+            print(f"  Critical Hits: {critical_hits}")
+            print(f"  Attacks Made: {attack_count}")
+            
+            print(f"\nExploration Stats:")
+            print(f"  Rooms Explored: {rooms_explored}")
+            print(f"  Floors Visited: {len(floors_visited)}")
+            print(f"  Moves Made: {move_count}")
+            
+            print(f"\nItem Stats:")
+            print(f"  Items Collected: {items_collected}")
+            print(f"  Weapons Broken: {weapons_broken}")
+            print(f"  Armor Broken: {armor_broken}")
+            
+            print(f"\nResource Stats:")
+            print(f"  Gold Earned: {gold_earned}")
+            print(f"  Health Potions Used: {player_potions}")
+            print(f"  Stamina Potions Used: {stamina_potions}")
+            print(f"  Mana Potions Used: {mana_potions}")
+            
+            print(f"\nProgression Stats:")
+            print(f"  Mysterious Keys Found: {len(mysterious_keys)}")
+            print(f"  Golden Keys Found: {golden_keys}")
+            print(f"  Waypoints Set: {len(waypoints)}")
+            print(f"  Spells Learned: {len(learned_spells)}")
+            print(f"  Enemies Discovered: {len(discovered_enemies)}")
+            
+            print(f"\nCharacter Stats:")
+            print(f"  Level: {player_level}/100")
+            print(f"  XP: {player_xp}/{player_xp_to_next}")
+            print(f"  HP: {player_hp}/{player_max_hp}")
+            print(f"  Stamina: {player_stamina}/{player_max_stamina}")
+            print(f"  Mana: {player_mana}/{player_max_mana}")
+            print(f"  Gold: {player_money}")
+            print("==========================")
+        
         elif command == "mods":
             from mods.mod_loader import mod_loader
             loaded_mods = mod_loader.list_mods()
@@ -440,7 +544,10 @@ def main():
                                      player_max_stamina, player_mana, player_max_mana, player_money, 
                                      player_potions, stamina_potions, mana_potions, mysterious_keys, 
                                      golden_keys, unlocked_floors, waypoints, waypoint_scrolls, 
-                                     discovered_enemies, learned_spells, spell_scrolls, using_fists)
+                                     discovered_enemies, learned_spells, spell_scrolls, using_fists,
+                                     player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated,
+                                     total_damage_dealt, total_damage_taken, critical_hits, attack_count,
+                                     rooms_explored, floors_visited, move_count, items_collected, weapons_broken, gold_earned)
                         print("(Auto-saved!)")
                         main.room_count = 0  # Reset counter
                     except Exception as e:
@@ -606,6 +713,41 @@ def main():
                 if enemy["hp"] <= 0:
                     print(f"You defeated the {enemy['name']}!")
                     
+                    # XP reward for defeating enemies
+                    try:
+                        from leveling_system import calculate_xp_reward, add_xp_and_level_up
+                        
+                        # Calculate XP reward based on enemy location and type
+                        xp_gained = calculate_xp_reward(enemy["name"], player_x, player_y, player_floor)
+                        player_xp += xp_gained
+                        print(f"You gained {xp_gained} XP!")
+                        
+                        # Check for level up
+                        new_xp, new_level, new_hp, new_max_hp, levels_gained, new_xp_to_next = add_xp_and_level_up(
+                            player_xp, player_level, player_hp, player_max_hp
+                        )
+                        
+                        if levels_gained > 0:
+                            player_xp = new_xp
+                            player_level = new_level
+                            player_hp = new_hp
+                            player_max_hp = new_max_hp
+                            player_xp_to_next = new_xp_to_next
+                            
+                            print(f"🎉 LEVEL UP! You are now level {player_level}!")
+                            print(f"Health increased! HP: {player_hp}/{player_max_hp}")
+                            
+                            if player_level >= 100:
+                                print("🏆 MAXIMUM LEVEL REACHED! You are a legendary warrior!")
+                            else:
+                                print(f"XP to next level: {player_xp}/{player_xp_to_next}")
+                        else:
+                            # Update XP to next level
+                            player_xp_to_next = new_xp_to_next
+                            
+                    except ImportError:
+                        print("Leveling system not available.")
+                    
                     # Gold reward for defeating enemies
                     if enemy.get("is_boss"):
                         gold_reward = random.randint(15, 25)
@@ -618,7 +760,7 @@ def main():
                     
                     # Discover enemy for bestiary
                     if enemy["name"] not in discovered_enemies:
-                        discovered_enemies[enemy["name"]] = True
+                        discovered_enemies.add(enemy["name"])
                         print(f"New enemy discovered: {enemy['name']}!")
                     
                     # Remove enemy from room
@@ -669,19 +811,13 @@ def main():
         
         # Inventory commands
         elif command == "take":
-            handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR)
+            handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR, mysterious_keys, golden_keys)
         
-        elif command == "inventory":
-            handle_inventory(inventory, using_fists)
-        
-        elif command == "armor":
-            handle_armor(armor_inventory, equipped_armor)
+        elif command == "equipment":
+            handle_equipment(inventory, armor_inventory, equipped_armor, using_fists)
         
         elif command == "drop":
-            handle_drop(inventory, current_room)
-        
-        elif command == "drop_armor":
-            handle_drop_armor(armor_inventory, equipped_armor, current_room)
+            handle_drop(inventory, armor_inventory, equipped_armor, current_room)
         
         elif command == "equip":
             success, new_equipped_armor = handle_equip(armor_inventory)
@@ -694,10 +830,190 @@ def main():
                 using_fists = new_using_fists
         
         # Resource commands
-        elif command == "absorb":
-            player_max_hp, player_hp, player_stamina, player_max_mana, player_mana = handle_absorb(
+        elif command == "consume":
+            player_max_hp, player_hp, player_stamina, player_max_mana, player_mana = handle_consume(
                 current_room, player_max_hp, player_hp, player_stamina, player_max_stamina, 
-                player_mana, player_max_mana)
+                player_mana, player_max_mana, player_potions, stamina_potions, mana_potions)
+        
+        elif command == "buy":
+            if current_room.get("type") == "shop" and current_room.get("shop"):
+                shop = current_room["shop"]
+                
+                # Check if shop has any items
+                has_items = (len(shop.get("items", [])) > 0 or 
+                           shop.get("armor") or 
+                           shop.get("has_key") or 
+                           shop.get("life_crystal") or 
+                           shop.get("stamina_potions", 0) > 0 or 
+                           shop.get("mana_potions", 0) > 0 or 
+                           shop.get("waypoint_scrolls", 0) > 0)
+                
+                if not has_items:
+                    print("The shop is empty and closed.")
+                    continue
+                
+                print("\nShop inventory:")
+                for i, item in enumerate(shop.get("items", [])):
+                    print(f"  {i+1}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}) - {item['cost']} gold (1 left)")
+                if shop.get("armor"):
+                    armor = shop["armor"]
+                    print(f"  R. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}) - 14 gold (1 left)")
+                print(f"  P. Health Potion - {shop.get('potion_price', 15)} gold ({shop.get('health_potions', 0)} left)")
+                if shop.get("stamina_potions", 0) > 0:
+                    print(f"  S. Stamina Potion - {shop.get('stamina_potion_price', 15)} gold ({shop.get('stamina_potions', 0)} left)")
+                if shop.get("mana_potions", 0) > 0:
+                    print(f"  M. Mana Potion - {shop.get('mana_potion_price', 15)} gold ({shop.get('mana_potions', 0)} left)")
+                if shop.get("golden_keys", 0) > 0:
+                    print(f"  K. Golden Key - 35 gold ({shop.get('golden_keys', 0)} left)")
+                if shop.get("life_crystal"):
+                    print("  L. Life Crystal - 21 gold (1 left)")
+                if shop.get("stamina_crystal"):
+                    print("  T. Stamina Crystal - 21 gold (1 left)")
+                if shop.get("mana_crystal"):
+                    print("  N. Mana Crystal - 21 gold (1 left)")
+                if shop.get("waypoint_scrolls", 0) > 0:
+                    print(f"  W. Waypoint Scroll - {shop.get('waypoint_scroll_price', 25)} gold ({shop.get('waypoint_scrolls', 0)} left)")
+                
+                # Show spell scrolls
+                if shop.get("spell_scrolls"):
+                    print("Spell Scrolls:")
+                    for i, (spell_name, count) in enumerate(shop["spell_scrolls"].items()):
+                        price = int(random.randint(40, 80) * 0.7)  # 30% reduction
+                        print(f"  {chr(65 + i)}. {spell_name} Scroll - {price} gold ({count} left)")
+                
+                choice = input("What would you like to buy? (or 'cancel'): ").strip()
+                
+                if choice == "cancel":
+                    print("You leave the shop.")
+                elif choice.lower() == "p":
+                    if shop.get("health_potions", 0) > 0:
+                        if player_money >= shop.get("potion_price", 15):
+                            player_money -= shop.get("potion_price", 15)
+                            player_potions += 1
+                            shop["health_potions"] = shop.get("health_potions", 0) - 1
+                            print("You bought a health potion!")
+                        else:
+                            print("You don't have enough gold.")
+                    else:
+                        print("No health potions available.")
+                elif choice.lower() == "s" and shop.get("stamina_potions", 0) > 0:
+                    if player_money >= shop.get("stamina_potion_price", 15):
+                        player_money -= shop.get("stamina_potion_price", 15)
+                        stamina_potions += 1
+                        shop["stamina_potions"] = shop.get("stamina_potions", 0) - 1
+                        print("You bought a stamina potion!")
+                    else:
+                        print("You don't have enough gold.")
+                elif choice.lower() == "m" and shop.get("mana_potions", 0) > 0:
+                    if player_money >= shop.get("mana_potion_price", 15):
+                        player_money -= shop.get("mana_potion_price", 15)
+                        mana_potions += 1
+                        shop["mana_potions"] = shop.get("mana_potions", 0) - 1
+                        print("You bought a mana potion!")
+                    else:
+                        print("You don't have enough gold.")
+                elif choice.lower() == "k" and shop.get("golden_keys", 0) > 0:
+                    if player_money >= 35:  # 30% reduction from 50
+                        if golden_keys < 3:
+                            player_money -= 35
+                            golden_keys += 1
+                            shop["golden_keys"] = shop.get("golden_keys", 0) - 1
+                            print(f"You bought a golden key! (You now have {golden_keys})")
+                        else:
+                            print("You can only carry 3 golden keys maximum!")
+                    else:
+                        print("You don't have enough gold.")
+                elif choice.lower() == "l" and shop.get("life_crystal"):
+                    if player_money >= 21:  # 30% reduction from 30
+                        player_money -= 21
+                        player_max_hp += 10
+                        player_hp = min(player_hp + 20, player_max_hp)
+                        shop["life_crystal"] = False  # Remove the crystal from shop
+                        print("You bought and absorbed a life crystal! +10 max HP, +20 current HP")
+                    else:
+                        print("You don't have enough gold.")
+                elif choice.lower() == "t" and shop.get("stamina_crystal"):
+                    if player_money >= 21:  # Same price as life crystal
+                        player_money -= 21
+                        player_max_stamina += 20
+                        player_stamina = min(player_stamina + 40, player_max_stamina)
+                        shop["stamina_crystal"] = False  # Remove the crystal from shop
+                        print("You bought and absorbed a stamina crystal! +20 max stamina, +40 current stamina")
+                    else:
+                        print("You don't have enough gold.")
+                elif choice.lower() == "n" and shop.get("mana_crystal"):
+                    if player_money >= 21:  # Same price as life crystal
+                        player_money -= 21
+                        player_max_mana += 20
+                        player_mana = min(player_mana + 40, player_max_mana)
+                        shop["mana_crystal"] = False  # Remove the crystal from shop
+                        print("You bought and absorbed a mana crystal! +20 max mana, +40 current mana")
+                    else:
+                        print("You don't have enough gold.")
+                elif choice.lower() == "w" and shop.get("waypoint_scrolls", 0) > 0:
+                    if player_money >= shop.get("waypoint_scroll_price", 25):
+                        player_money -= shop.get("waypoint_scroll_price", 25)
+                        waypoint_scrolls += 1
+                        shop["waypoint_scrolls"] = shop.get("waypoint_scrolls", 0) - 1
+                        print("You bought a waypoint scroll!")
+                    else:
+                        print("You don't have enough gold.")
+                elif choice.lower() == "r" and shop.get("armor"):
+                    if player_money >= 14:
+                        if len(armor_inventory) < MAX_ARMOR:
+                            player_money -= 14
+                            armor_inventory.append(shop["armor"])
+                            shop["armor"] = None  # Remove armor from shop
+                            print(f"You bought the {armor_inventory[-1]['name']}!")
+                        else:
+                            print("Your armor inventory is full! Drop some armor first.")
+                    else:
+                        print("You don't have enough gold.")
+                elif choice.isdigit():
+                    choice_num = int(choice) - 1
+                    if 0 <= choice_num < len(shop.get("items", [])):
+                        item = shop["items"][choice_num]
+                        if player_money >= item["cost"]:
+                            if len(inventory) < MAX_WEAPONS:
+                                player_money -= item["cost"]
+                                inventory.append(item)
+                                shop["items"].pop(choice_num)  # Remove item from shop
+                                print(f"You bought the {item['name']}!")
+                            else:
+                                print("Your weapon inventory is full! Drop a weapon first.")
+                        else:
+                            print("You don't have enough gold.")
+                    else:
+                        print("Invalid choice.")
+                elif choice.isalpha() and len(choice) == 1:
+                    # Handle spell scrolls
+                    scroll_index = ord(choice.upper()) - ord('A')
+                    if shop.get("spell_scrolls") and 0 <= scroll_index < len(shop["spell_scrolls"]):
+                        spell_name = list(shop["spell_scrolls"].keys())[scroll_index]
+                        count = shop["spell_scrolls"][spell_name]
+                        if count > 0:
+                            price = int(random.randint(40, 80) * 0.7)  # 30% reduction
+                            if player_money >= price:
+                                player_money -= price
+                                if spell_name not in spell_scrolls:
+                                    spell_scrolls[spell_name] = 0
+                                spell_scrolls[spell_name] += 1
+                                shop["spell_scrolls"][spell_name] -= 1
+                                print(f"You bought a {spell_name} scroll!")
+                            else:
+                                print("You don't have enough gold.")
+                        else:
+                            print("No more of that scroll available.")
+                    else:
+                        print("Invalid choice.")
+                else:
+                    print("Invalid choice.")
+            else:
+                print("There's no shop here.")
+        
+        elif command.startswith("waypoint"):
+            command_parts = command.split()
+            waypoints, waypoint_scrolls = handle_waypoint(command_parts, waypoints, waypoint_scrolls, player_floor, player_x, player_y)
         
         # Shop commands
         elif command in ["repair", "Repair"]:

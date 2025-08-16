@@ -1,0 +1,7 @@
+Lucky Axe
+damage: 28
+durability: 90
+crit_chance: 0.20
+crit_damage: 3.0
+mana_cost: 0
+description: An axe with incredible critical hit potential

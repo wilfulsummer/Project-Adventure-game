@@ -1,0 +1,24 @@
+weapons
+WEAPONS ADDED BY THIS MOD:
+
+SWORD OF EXAMPLES
+• Damage: 25
+• Durability: 100
+• Type: Unique Weapon
+• Description: A powerful sword created by modding
+• Spawn: Floor 1, 50+ rooms from center, normal rooms
+
+MODDED WEAPON
+• Damage: 15
+• Durability: 50
+• Type: Regular Weapon
+• Description: A weapon added by a mod
+• Spawn: Random weapon drops
+
+COMBAT TIPS:
+• The Sword of Examples is one of the best weapons on Floor 1
+• Use it against tough enemies and bosses
+• Modded weapons provide variety to the game
+• All weapons follow the same durability and repair rules
+
+This mod adds variety to the weapon selection without being overpowered!

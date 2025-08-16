@@ -1,0 +1,7 @@
+Custom Sword
+damage: 22
+durability: 120
+crit_chance: 0.12
+crit_damage: 2.3
+mana_cost: 0
+description: A custom sword with enhanced critical hit capabilities

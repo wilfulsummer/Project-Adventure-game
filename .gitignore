@@ -23,4 +23,7 @@ __pycache__/
 bug_reports/*.txt
 bug_reports/*.log
 
+# Past bug reports (entire folder ignored - resolved issues)
+past_bug_reports/
+
  

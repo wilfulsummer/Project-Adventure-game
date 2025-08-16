@@ -1,0 +1,43 @@
+WEAPON_TEMPLATE
+This file shows how to add weapons with custom stats to your mod.
+
+FORMAT:
+weapon_name
+damage: X
+durability: X
+crit_chance: X.X (0.0 to 1.0, default 0.05)
+crit_damage: X.X (multiplier, default 2.0)
+mana_cost: X (0 for no mana, default 0)
+description: Your weapon description here
+
+EXAMPLES:
+
+Sword of Power
+damage: 30
+durability: 150
+crit_chance: 0.15
+crit_damage: 2.5
+mana_cost: 0
+description: A powerful sword with increased critical hit chance
+
+Mana Blade
+damage: 25
+durability: 100
+crit_chance: 0.05
+crit_damage: 2.0
+mana_cost: 15
+description: A magical blade that consumes mana to attack
+
+Lucky Dagger
+damage: 18
+durability: 80
+crit_chance: 0.25
+crit_damage: 3.0
+mana_cost: 0
+description: A dagger with extremely high critical hit chance and damage
+
+NOTES:
+- crit_chance: 0.05 = 5% chance, 0.25 = 25% chance
+- crit_damage: 2.0 = 2x damage, 3.0 = 3x damage
+- mana_cost: 0 = no mana required, 15 = costs 15 mana per attack
+- All stats are optional - defaults will be used if not specified

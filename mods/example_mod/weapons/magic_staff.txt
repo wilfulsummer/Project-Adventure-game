@@ -1,0 +1,7 @@
+Magic Staff
+damage: 35
+durability: 200
+crit_chance: 0.08
+crit_damage: 2.2
+mana_cost: 20
+description: A powerful staff that consumes mana but deals massive damage

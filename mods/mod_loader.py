@@ -165,6 +165,151 @@ class ModLoader:
         if hasattr(mod_module, 'guides'):
             for guide_name, guide_data in mod_module.guides.items():
                 self.mod_data['guides'][f"{mod_name}.{guide_name}"] = guide_data
+        
+        # Auto-load guide files from mod directory
+        self.load_mod_guide_files(mod_name)
+        
+        # Auto-load weapon files from mod directory
+        self.load_mod_weapon_files(mod_name)
+    
+    def load_mod_guide_files(self, mod_name: str):
+        """Automatically load guide files from mod directory for easy guide creation"""
+        mod_path = os.path.join(self.mods_directory, mod_name)
+        
+        # Look for guide.txt file
+        guide_file = os.path.join(mod_path, "guide.txt")
+        if os.path.exists(guide_file):
+            try:
+                with open(guide_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                if len(lines) >= 2:  # Need at least guide name + content
+                    guide_name = lines[0].strip()
+                    guide_content = ''.join(lines[1:]).strip()  # Everything after first line
+                    
+                    if guide_name and guide_content:
+                        # Create a simple guide function that displays the content
+                        def create_guide_function(content):
+                            def show_guide():
+                                print(content)
+                            return show_guide
+                        
+                        # Register the guide automatically
+                        guide_id = f"{mod_name}.file_guide"
+                        self.mod_data['guides'][guide_id] = {
+                            "name": guide_name,
+                            "title": f"{guide_name} Guide",
+                            "description": f"Guide section: {guide_name}",
+                            "function": create_guide_function(guide_content),
+                            "requires_permission": False,
+                            "source": "file"
+                        }
+                        
+                        print(f"Auto-loaded guide '{guide_name}' from {mod_name}/guide.txt")
+                    
+            except Exception as e:
+                print(f"Warning: Could not load guide file for {mod_name}: {e}")
+        
+        # Look for guides/ directory with multiple guide files
+        guides_dir = os.path.join(mod_path, "guides")
+        if os.path.exists(guides_dir) and os.path.isdir(guides_dir):
+            try:
+                for filename in os.listdir(guides_dir):
+                    if filename.endswith('.txt'):
+                        guide_file_path = os.path.join(guides_dir, filename)
+                        
+                        with open(guide_file_path, 'r', encoding='utf-8') as f:
+                            lines = f.readlines()
+                        
+                        if len(lines) >= 2:  # Need at least guide name + content
+                            guide_name = lines[0].strip()
+                            guide_content = ''.join(lines[1:]).strip()  # Everything after first line
+                            
+                            if guide_name and guide_content:
+                                # Create a guide function for this specific guide
+                                def create_guide_function(content):
+                                    def show_guide():
+                                        print(content)
+                                    return show_guide
+                                
+                                guide_id = f"{mod_name}.{guide_name}"
+                                self.mod_data['guides'][guide_id] = {
+                                    "name": guide_name,
+                                    "title": f"{guide_name} Guide",
+                                    "description": f"Guide section: {guide_name}",
+                                    "function": create_guide_function(guide_content),
+                                    "requires_permission": False,
+                                    "source": "file"
+                                }
+                                
+                                print(f"Auto-loaded guide '{guide_name}' from {mod_name}/{filename}")
+                            
+            except Exception as e:
+                print(f"Warning: Could not load guides directory for {mod_name}: {e}")
+    
+    def load_mod_weapon_files(self, mod_name: str):
+        """Automatically load weapon files from mod directory for easy weapon creation"""
+        mod_path = os.path.join(self.mods_directory, mod_name)
+        
+        # Look for weapons/ directory
+        weapons_dir = os.path.join(mod_path, "weapons")
+        if os.path.exists(weapons_dir) and os.path.isdir(weapons_dir):
+            try:
+                for filename in os.listdir(weapons_dir):
+                    if filename.endswith('.txt'):
+                        weapon_file_path = os.path.join(weapons_dir, filename)
+                        
+                        with open(weapon_file_path, 'r', encoding='utf-8') as f:
+                            lines = f.readlines()
+                        
+                        if len(lines) >= 2:  # Need at least weapon name + one stat
+                            weapon_name = lines[0].strip()
+                            weapon_data = {"name": weapon_name}
+                            
+                            # Parse weapon stats from the file
+                            for line in lines[1:]:
+                                line = line.strip()
+                                if ':' in line:
+                                    key, value = line.split(':', 1)
+                                    key = key.strip().lower()
+                                    value = value.strip()
+                                    
+                                    # Parse different stat types
+                                    if key == 'damage':
+                                        weapon_data['damage'] = int(value)
+                                    elif key == 'durability':
+                                        weapon_data['durability'] = int(value)
+                                    elif key == 'crit_chance':
+                                        weapon_data['crit_chance'] = float(value)
+                                    elif key == 'crit_damage':
+                                        weapon_data['crit_damage'] = float(value)
+                                    elif key == 'mana_cost':
+                                        weapon_data['mana_cost'] = int(value)
+                                    elif key == 'description':
+                                        weapon_data['description'] = value
+                            
+                            # Set defaults for missing stats
+                            if 'damage' not in weapon_data:
+                                weapon_data['damage'] = 10
+                            if 'durability' not in weapon_data:
+                                weapon_data['durability'] = 50
+                            if 'crit_chance' not in weapon_data:
+                                weapon_data['crit_chance'] = 0.05
+                            if 'crit_damage' not in weapon_data:
+                                weapon_data['crit_damage'] = 2.0
+                            if 'mana_cost' not in weapon_data:
+                                weapon_data['mana_cost'] = 0
+                            if 'description' not in weapon_data:
+                                weapon_data['description'] = f"A custom weapon: {weapon_name}"
+                            
+                            # Register the weapon
+                            weapon_id = f"{mod_name}.{weapon_name.lower().replace(' ', '_')}"
+                            self.mod_data['weapons'][weapon_id] = weapon_data
+                            
+                            print(f"Auto-loaded weapon '{weapon_name}' from {mod_name}/{filename}")
+                            
+            except Exception as e:
+                print(f"Warning: Could not load weapon files for {mod_name}: {e}")
     
     def get_unique_item(self, item_id: str) -> Optional[Dict[str, Any]]:
         """Get a unique item from mods"""

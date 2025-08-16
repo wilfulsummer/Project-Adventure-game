@@ -23,51 +23,96 @@ def show_map(player_floor, player_x, player_y, waypoints):
         print("No waypoints set.")
     print("===========")
 
-def show_room(room, player_floor, player_x, player_y, inventory, player_hp, player_max_hp, 
-              player_stamina, player_max_stamina, player_mana, player_max_mana, player_money, 
-              player_potions, stamina_potions, mana_potions, waypoint_scrolls, mysterious_keys, 
-              golden_keys, equipped_armor, spell_scrolls, learned_spells, discovered_enemies, unlocked_floors):
+def show_room(current_room, player_floor, player_x, player_y, inventory, player_hp, player_max_hp, 
+               player_stamina, player_max_stamina, player_mana, player_max_mana, player_money, 
+               player_potions, stamina_potions, mana_potions, waypoint_scrolls, mysterious_keys, 
+               golden_keys, equipped_armor, spell_scrolls, learned_spells, discovered_enemies, unlocked_floors,
+               player_level=1, player_xp=0, player_xp_to_next=100):
+    
+    # Show player stats FIRST (compact with abbreviated labels)
+    print(f"\n--- PLAYER STATUS ---")
+    print(f"Lv.{player_level} | Hp: {player_hp}/{player_max_hp} | Stm: {player_stamina}/{player_max_stamina} | Mp: {player_mana}/{player_max_mana} | Gold: {player_money}")
+    
+    # Show XP progress
+    if player_level < 100:
+        progress = (player_xp / player_xp_to_next) * 100 if player_xp_to_next > 0 else 0
+        print(f"XP: {player_xp}/{player_xp_to_next} ({progress:.1f}%)")
+    else:
+        print(f"🏆 Level: {player_level} (MAXIMUM LEVEL!)")
+    
+    # Show potions and scrolls
+    print(f"Potions: Hp({player_potions}) Stm({stamina_potions}) Mp({mana_potions}) | Scrolls: {waypoint_scrolls}")
+    
+    # Show keys
+    if mysterious_keys:
+        floor_list = ", ".join([f"Floor {floor}" for floor in mysterious_keys.keys()])
+        print(f"Mysterious Keys: {floor_list}")
+    if golden_keys > 0:
+        print(f"Golden Keys: {golden_keys}")
+    
+    # Show current equipment
+    if equipped_armor:
+        print(f"Armor: {equipped_armor['name']} (Def: {equipped_armor['defense']}, Dur: {equipped_armor['durability']})")
+    else:
+        print("Armor: None")
+    
+    # Show inventory summary
+    inv_names = [f"{w['name']}({w.get('durability', '-')})" for w in inventory if "damage" in w]
+    if not inventory:
+        print("Weapons: Empty (using fists)")
+    else:
+        print(f"Weapons: {', '.join(inv_names)}")
+    
+    if spell_scrolls:
+        scroll_list = ", ".join([f"{name} ({count})" for name, count in spell_scrolls.items()])
+        print(f"Spell Scrolls: {scroll_list}")
+    if learned_spells:
+        spell_list = ", ".join([f"{i+1}.{name}" for i, name in enumerate(learned_spells)])
+        print(f"Learned Spells: {spell_list}")
+    
+    # Now show room information
+    print(f"\n=== {current_room.get('name', 'ROOM').upper()} ===")
     
     # Dynamic room description based on current state
-    if room.get("type") == "key_door":
-        if room.get("enemy"):
+    if current_room.get("type") == "key_door":
+        if current_room.get("enemy"):
             # Troll is still alive
-            print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}): You find a glowing golden door… and the Troll guarding it!")
+            print(f"You enter Floor {player_floor} ({player_x}, {player_y}): You find a glowing golden door… and the Troll guarding it!")
         else:
             # Troll is dead, show updated description
-            if not room.get("treasure_looted"):
-                print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}): The golden door stands open! A magnificent treasure chamber lies beyond!")
+            if not current_room.get("treasure_looted"):
+                print(f"You enter Floor {player_floor} ({player_x}, {player_y}): The golden door stands open! A magnificent treasure chamber lies beyond!")
             else:
-                print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}): The golden door stands open, but the treasure chamber has been emptied.")
+                print(f"You enter Floor {player_floor} ({player_x}, {player_y}): The golden door stands open, but the treasure chamber has been emptied.")
     else:
         # For other room types, use the original description
-        print(f"\nYou enter Floor {player_floor} ({player_x}, {player_y}):", room.get("description", "A mysterious room..."))
+        print(f"You enter Floor {player_floor} ({player_x}, {player_y}):", current_room.get("description", "A mysterious room..."))
 
-    if room.get("crystal_type") == "life":
-        print("A glowing red crystal pulses on a stone pedestal. Use 'absorb' to consume it.")
-    elif room.get("crystal_type") == "stamina":
-        print("A glowing blue crystal pulses on a stone pedestal. Use 'absorb' to consume it.")
-    elif room.get("crystal_type") == "mana":
-        print("A glowing purple crystal pulses on a stone pedestal. Use 'absorb' to consume it.")
-    elif room.get("crystal_type") == "life_stamina":
-        print("Two crystals pulse on stone pedestals - a red life crystal and a blue stamina crystal. Use 'absorb' to consume them.")
-    elif room.get("crystal_type") == "life_mana":
-        print("Two crystals pulse on stone pedestals - a red life crystal and a purple mana crystal. Use 'absorb' to consume them.")
-    elif room.get("crystal_type") == "all":
-        print("Three crystals pulse on stone pedestals - a red life crystal, a blue stamina crystal, and a purple mana crystal. Use 'absorb' to consume them.")
+    if current_room.get("crystal_type") == "life":
+        print("A glowing red crystal pulses on a stone pedestal. Use 'consume' to consume it.")
+    elif current_room.get("crystal_type") == "stamina":
+        print("A glowing blue crystal pulses on a stone pedestal. Use 'consume' to consume it.")
+    elif current_room.get("crystal_type") == "mana":
+        print("A glowing purple crystal pulses on a stone pedestal. Use 'consume' to consume it.")
+    elif current_room.get("crystal_type") == "life_stamina":
+        print("Two crystals pulse on stone pedestals - a red life crystal and a blue stamina crystal. Use 'consume' to consume them.")
+    elif current_room.get("crystal_type") == "life_mana":
+        print("Two crystals pulse on stone pedestals - a red life crystal and a purple mana crystal. Use 'consume' to consume them.")
+    elif current_room.get("crystal_type") == "all":
+        print("Three crystals pulse on stone pedestals - a red life crystal, a blue stamina crystal, and a purple mana crystal. Use 'consume' to consume them.")
 
-    if room.get("type") == "chest" and room.get("chest"):
-        if room["chest"]["locked"]:
-            print("There is a heavy chest here. It looks like it requires a golden key.")
+    if current_room.get("type") == "chest" and current_room.get("chest"):
+        if current_room["chest"]["locked"]:
+            print("The chest is locked. You need a golden key to open it.")
         else:
             print("The opened chest lies empty.")
 
-    if room.get("type") == "key_door":
-        if room.get("enemy"):
+    if current_room.get("type") == "key_door":
+        if current_room.get("enemy"):
             print("A glowing golden door blocks your path. A monstrous Troll stands guard!")
         else:
             # Boss defeated, door is now open
-            if not room.get("treasure_looted"):
+            if not current_room.get("treasure_looted"):
                 print("The golden door is now open! A magnificent treasure chamber lies beyond!")
                 if golden_keys > 0:
                     print(f"Use 'loot' to collect the treasure with your golden key. (You have {golden_keys})")
@@ -76,51 +121,29 @@ def show_room(room, player_floor, player_x, player_y, inventory, player_hp, play
             else:
                 print("The golden door stands open, but the treasure chamber has been emptied.")
 
-    if room.get("type") == "stairwell":
-        if room.get("requires_mysterious_key"):
+    if current_room.get("type") == "stairwell":
+        if current_room.get("requires_mysterious_key"):
             if player_floor in mysterious_keys or player_floor in unlocked_floors:
                 print("The stairwell is unlocked! Use 'descend' to go deeper.")
             else:
                 print("The stairwell is locked. You need a mysterious key for this floor to proceed.")
 
-    if room.get("enemy"):
-        enemies = room["enemy"]
-        
-        # Handle single enemy (convert to list for consistency)
-        if not isinstance(enemies, list):
-            enemies = [enemies]
-        
-        # Display multiple enemies
-        if len(enemies) == 1:
-            e = enemies[0]
-            tag = " [BOSS]" if e.get("is_boss") else ""
-            if e.get("is_training_dummy"):
-                tag = " [TRAINING]"
-                # Show ??? for training dummy HP until defeated
-                if "Training Dummy" not in discovered_enemies:
-                    print(f"Enemy here: {e['name']}{tag} (HP: ???)")
-                else:
-                    print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
+    if current_room.get("enemy"):
+        e = current_room["enemy"]
+        tag = " [BOSS]" if e.get("is_boss") else ""
+        if e.get("is_training_dummy"):
+            tag = " [TRAINING]"
+            # Show ??? for training dummy HP until defeated
+            if "Training Dummy" not in discovered_enemies:
+                print(f"Enemy here: {e['name']}{tag} (HP: ???)")
             else:
                 print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
         else:
-            # Multiple enemies (swarm)
-            print(f"Enemies here: {len(enemies)}")
-            for i, e in enumerate(enemies):
-                if e["hp"] > 0:  # Only show living enemies
-                    tag = " [BOSS]" if e.get("is_boss") else ""
-                    if e.get("is_training_dummy"):
-                        tag = " [TRAINING]"
-                        if "Training Dummy" not in discovered_enemies:
-                            print(f"  {i+1}. {e['name']}{tag} (HP: ???)")
-                        else:
-                            print(f"  {i+1}. {e['name']}{tag} (HP: {e['hp']})")
-                    else:
-                        print(f"  {i+1}. {e['name']}{tag} (HP: {e['hp']})")
+            print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
 
-    if room.get("weapons"):
+    if current_room.get("weapons"):
         print("Weapons here:")
-        for i, w in enumerate(room["weapons"], 1):
+        for i, w in enumerate(current_room["weapons"], 1):
             if w.get("name") == "Spell Book":
                 print(f"  {i}. {w['name']} (Damage: ???, Durability: {w['durability']})")
             elif w.get("requires_mana"):
@@ -128,41 +151,22 @@ def show_room(room, player_floor, player_x, player_y, inventory, player_hp, play
             else:
                 print(f"  {i}. {w['name']} (Damage: {w['damage']}, Durability: {w['durability']})")
 
-    if room.get("armors"):
+    if current_room.get("armors"):
         print("Armor here:")
-        for i, a in enumerate(room["armors"], 1):
+        for i, a in enumerate(current_room["armors"], 1):
             print(f"  {i}. {a['name']} (Defense: {a['defense']}, Durability: {a['durability']})")
 
-    if room.get("mysterious_key"):
-        key = room["mysterious_key"]
+    if current_room.get("mysterious_key"):
+        key = current_room["mysterious_key"]
         if player_floor in mysterious_keys or player_floor in unlocked_floors:
             print(f"A {key['name']} lies here, but it's not useful to you.")
         else:
-            print(f"A {key['name']} lies here. Use 'take_key' to pick it up.")
+            print(f"A {key['name']} lies here. Use 'take' to pick it up.")
 
-    if room.get("shop"):
+    if current_room.get("shop"):
         print("This is a shop. Type 'buy' to see what's for sale.")
 
-    inv_names = [f"{w['name']}({w.get('durability', '-')})" for w in inventory if "damage" in w]
-    if not inventory:
-        print("Your inventory: Empty (using fists)")
-    else:
-        print("Your inventory:", inv_names)
-    print(f"Your HP: {player_hp}/{player_max_hp} | Stamina: {player_stamina}/{player_max_stamina} | Mana: {player_mana}/{player_max_mana} | Gold: {player_money} | Health Potions: {player_potions} | Stamina Potions: {stamina_potions} | Mana Potions: {mana_potions} | Waypoint Scrolls: {waypoint_scrolls}")
-    if mysterious_keys:
-        floor_list = ", ".join([f"Floor {floor}" for floor in mysterious_keys.keys()])
-        print(f"You have mysterious keys for: {floor_list}")
-    if golden_keys > 0:
-        print(f"You have {golden_keys} golden key(s)!")
-    if equipped_armor:
-        print(f"Equipped Armor: {equipped_armor['name']} (Defense: {equipped_armor['defense']}, Durability: {equipped_armor['durability']})")
-    if spell_scrolls:
-        scroll_list = ", ".join([f"{name} ({count})" for name, count in spell_scrolls.items()])
-        print(f"Spell Scrolls: {scroll_list}")
-    if learned_spells:
-        spell_list = ", ".join([f"{i+1}.{name}" for i, name in enumerate(learned_spells)])
-        print(f"Learned Spells: {spell_list}")
-    print("Type 'help' to see a list of commands.")
+    print("\nType 'guide' to see a list of commands.")
 
 def show_bestiary(discovered_enemies):
     """Display information about discovered enemies in the game"""
@@ -267,13 +271,13 @@ def show_items_help():
     """Display item-related help"""
     print("\n=== ITEMS HELP ===")
     print("Commands:")
-    print("  take - Pick up weapons or armor")
-    print("  drop - Drop a weapon")
-    print("  drop_armor - Drop armor")
+    print("  take - Pick up weapons, armor, or keys")
+    print("    • Use 'take all' to pick up everything you can carry")
+    print("    • Smart inventory management - skips items when full")
+    print("  drop - Drop weapons or armor (shows both types)")
     print("  switch - Switch between weapons (includes fists option)")
     print("  equip - Equip armor")
-    print("  inventory - Show your weapons")
-    print("  armor - Show your armor")
+    print("  equipment - Show all weapons and armor")
     print("  use_scroll - Learn spells from scrolls")
     print("  repair - Repair weapons and armor at shops")
     print("\nItem Tips:")
@@ -291,8 +295,7 @@ def show_resources_help():
     """Display resource-related help"""
     print("\n=== RESOURCES HELP ===")
     print("Commands:")
-    print("  absorb - Use a life/stamina/mana crystal")
-    print("  use - Use health, stamina, or mana potions")
+    print("  consume - Use crystals or potions (automatically detects what's available)")
     print("\nResource Tips:")
     print("  - Health potions restore 30 HP")
     print("  - Stamina potions restore 10 stamina")
@@ -301,6 +304,7 @@ def show_resources_help():
     print("  - Stamina crystals: +10 max stamina, +10 current stamina")
     print("  - Mana crystals: +10 max mana, +10 current mana")
     print("  - Crystal rooms can have single, dual, or triple crystals")
+    print("  - The consume command automatically detects and uses the best available resource")
     print("==================")
 
 def show_progression_help():
@@ -328,11 +332,10 @@ def show_utility_help():
     print("\n=== UTILITY HELP ===")
     print("Commands:")
     print("  map - Show map and waypoints")
-    print("  waypoint - Add a waypoint")
-    print("  view - View waypoint details")
-    print("  delete - Delete a waypoint")
-    print("  teleport - Use waypoint scroll to teleport to a waypoint")
+    print("  waypoint - Manage waypoints (add, view, delete, teleport)")
     print("  bestiary - Show information about enemies")
+    print("  level - Show level status and XP progress")
+    print("  stats - Show detailed player statistics")
     print("  save - Save the game (asks for save name)")
     print("  load - Load your saved game")
     print("  saves - List and view all save files")
@@ -362,13 +365,13 @@ def show_all_help():
     print("Movement:")
     print("  north/south/east/west, descend")
     print("Items:")
-    print("  take, drop, drop_armor, switch, equip, inventory, armor, use_scroll, repair")
+    print("  take, drop, switch, equip, equipment, use_scroll, repair")
     print("Resources:")
-    print("  absorb, use")
+    print("  consume")
     print("Progression:")
-    print("  take_key, drop_mysterious_key, open, loot, buy, repair")
+    print("  open, loot, buy, repair")
     print("Utility:")
-    print("  map, waypoint, view, delete, teleport, bestiary, save, load, saves, delete_save, bug_report, guide, quit")
+    print("  map, waypoint, bestiary, level, stats, save, load, saves, delete_save, bug_report, guide, quit")
     print("==================")
 
 def show_developer_help():

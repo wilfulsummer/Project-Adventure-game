@@ -51,10 +51,17 @@ def list_save_files():
 def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
               player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
               player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-              unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists):
+              unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
+              player_level=1, player_xp=0, player_xp_to_next=100, enemies_defeated=0, bosses_defeated=0,
+              total_damage_dealt=0, total_damage_taken=0, critical_hits=0, attack_count=0, rooms_explored=0,
+              floors_visited=None, move_count=0, items_collected=0, weapons_broken=0, gold_earned=0):
     
     # Import unique items system to get discovered uniques
     from unique_items import discovered_uniques
+    
+    # Handle floors_visited set conversion
+    if floors_visited is None:
+        floors_visited = set()
     
     data = {
         "save_name": save_name,
@@ -102,7 +109,22 @@ def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, pla
         "learned_spells": learned_spells,
         "spell_scrolls": spell_scrolls,
         "using_fists": using_fists,
-        "discovered_uniques": discovered_uniques
+        "discovered_uniques": discovered_uniques,
+        "player_level": player_level,
+        "player_xp": player_xp,
+        "player_xp_to_next": player_xp_to_next,
+        "enemies_defeated": enemies_defeated,
+        "bosses_defeated": bosses_defeated,
+        "total_damage_dealt": total_damage_dealt,
+        "total_damage_taken": total_damage_taken,
+        "critical_hits": critical_hits,
+        "attack_count": attack_count,
+        "rooms_explored": rooms_explored,
+        "floors_visited": list(floors_visited),
+        "move_count": move_count,
+        "items_collected": items_collected,
+        "weapons_broken": weapons_broken,
+        "gold_earned": gold_earned
     }
     
     save_path = get_save_file_path(save_name)
@@ -119,12 +141,18 @@ def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, pla
 def auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                    player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                    player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-                   unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists):
+                   unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
+                   player_level=1, player_xp=0, player_xp_to_next=100, enemies_defeated=0, bosses_defeated=0,
+                   total_damage_dealt=0, total_damage_taken=0, critical_hits=0, attack_count=0, rooms_explored=0,
+                   floors_visited=None, move_count=0, items_collected=0, weapons_broken=0, gold_earned=0):
     """Auto-save the game (overwrites previous auto-save)"""
     return save_game("auto_save", worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                      player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                      player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
+                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
+                     player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated, total_damage_dealt,
+                     total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
+                     items_collected, weapons_broken, gold_earned)
 
 def load_game(save_name=None):
     """Load a game from a specific save file"""

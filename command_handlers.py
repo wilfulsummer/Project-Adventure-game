@@ -350,13 +350,14 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
         print("There's no enemy here to attack.")
     return True
 
-def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR):
-    """Handle take command"""
-    # Check if there are weapons or armor to take
+def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR, mysterious_keys, golden_keys):
+    """Handle take command for weapons, armor, and keys"""
+    # Check if there are weapons, armor, or keys to take
     has_weapons = current_room.get("weapons")
     has_armors = current_room.get("armors")
+    has_mysterious_key = current_room.get("mysterious_key")
     
-    if not has_weapons and not has_armors:
+    if not has_weapons and not has_armors and not has_mysterious_key:
         print("There's nothing here to take.")
         return True
     
@@ -368,6 +369,8 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
     if has_armors:
         for armor in current_room["armors"]:
             available_items.append(("armor", armor))
+    if has_mysterious_key:
+        available_items.append(("mysterious_key", has_mysterious_key))
     
     if len(available_items) == 1:
         # Only one item, take it automatically
@@ -379,47 +382,108 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
             inventory.append(item)
             current_room["weapons"].remove(item)
             print(f"You picked up the {item['name']}!")
-        else:  # armor
+        elif item_type == "armor":
             if len(armor_inventory) >= MAX_ARMOR:
                 print("Your armor inventory is full! Drop some armor first.")
                 return True
             armor_inventory.append(item)
             current_room["armors"].remove(item)
             print(f"You picked up the {item['name']}!")
+        elif item_type == "mysterious_key":
+            floor = item["floor"]
+            mysterious_keys[floor] = True
+            current_room["mysterious_key"] = None
+            print(f"You picked up the mysterious key for Floor {floor}!")
     else:
-        # Multiple items, let player choose
+        # Multiple items, let player choose or take all
         print("What do you want to take?")
+        print("  all - Take all items (if you have space)")
         for i, (item_type, item) in enumerate(available_items, 1):
             if item_type == "weapon":
                 if item.get("requires_mana"):
                     print(f"  {i}. {item['name']} (Weapon - Damage: {item['damage']}, Durability: {item['durability']}, Mana Cost: {item.get('mana_cost', 10)})")
                 else:
                     print(f"  {i}. {item['name']} (Weapon - Damage: {item['damage']}, Durability: {item['durability']})")
-            else:  # armor
+            elif item_type == "armor":
                 print(f"  {i}. {item['name']} (Armor - Defense: {item['defense']}, Durability: {item['durability']})")
+            elif item_type == "mysterious_key":
+                print(f"  {i}. Mysterious Key (Floor {item['floor']})")
         
-        try:
-            choice = int(input("Enter number: ")) - 1
-            if 0 <= choice < len(available_items):
-                item_type, item = available_items[choice]
-                if item_type == "weapon":
-                    if len(inventory) >= MAX_WEAPONS:
-                        print("Your weapon inventory is full! Drop a weapon first.")
-                        return True
-                    inventory.append(item)
-                    current_room["weapons"].remove(item)
-                    print(f"You picked up the {item['name']}!")
-                else:  # armor
-                    if len(armor_inventory) >= MAX_ARMOR:
-                        print("Your armor inventory is full! Drop some armor first.")
-                        return True
-                    armor_inventory.append(item)
-                    current_room["armors"].remove(item)
-                    print(f"You picked up the {item['name']}!")
-            else:
-                print("Invalid choice.")
-        except ValueError:
-            print("Please enter a valid number.")
+        choice = input("Enter number or 'all': ").strip().lower()
+        
+        if choice == "all":
+            # Take all items that we can fit
+            items_taken = 0
+            items_skipped = 0
+            
+            # Take mysterious keys first (they don't take inventory space)
+            for item_type, item in available_items[:]:
+                if item_type == "mysterious_key":
+                    floor = item["floor"]
+                    mysterious_keys[floor] = True
+                    current_room["mysterious_key"] = None
+                    print(f"You picked up the mysterious key for Floor {floor}!")
+                    items_taken += 1
+                    available_items.remove((item_type, item))
+            
+            # Take weapons until inventory is full
+            weapons_to_take = [item for item_type, item in available_items if item_type == "weapon"]
+            for weapon in weapons_to_take:
+                if len(inventory) < MAX_WEAPONS:
+                    inventory.append(weapon)
+                    current_room["weapons"].remove(weapon)
+                    print(f"You picked up the {weapon['name']}!")
+                    items_taken += 1
+                else:
+                    items_skipped += 1
+            
+            # Take armor until inventory is full
+            armors_to_take = [item for item_type, item in available_items if item_type == "armor"]
+            for armor in armors_to_take:
+                if len(armor_inventory) < MAX_ARMOR:
+                    armor_inventory.append(armor)
+                    current_room["armors"].remove(armor)
+                    print(f"You picked up the {armor['name']}!")
+                    items_taken += 1
+                else:
+                    items_skipped += 1
+            
+            # Summary
+            if items_taken > 0:
+                print(f"✅ Took {items_taken} items!")
+            if items_skipped > 0:
+                print(f"⚠️  Skipped {items_skipped} items (inventory full)")
+            
+        else:
+            # Handle single item selection
+            try:
+                choice_num = int(choice) - 1
+                if 0 <= choice_num < len(available_items):
+                    item_type, item = available_items[choice_num]
+                    if item_type == "weapon":
+                        if len(inventory) >= MAX_WEAPONS:
+                            print("Your weapon inventory is full! Drop a weapon first.")
+                            return True
+                        inventory.append(item)
+                        current_room["weapons"].remove(item)
+                        print(f"You picked up the {item['name']}!")
+                    elif item_type == "armor":
+                        if len(armor_inventory) >= MAX_ARMOR:
+                            print("Your armor inventory is full! Drop some armor first.")
+                            return True
+                        armor_inventory.append(item)
+                        current_room["armors"].remove(item)
+                        print(f"You picked up the {item['name']}!")
+                    elif item_type == "mysterious_key":
+                        floor = item["floor"]
+                        mysterious_keys[floor] = True
+                        current_room["mysterious_key"] = None
+                        print(f"You picked up the mysterious key for Floor {floor}!")
+                else:
+                    print("Invalid choice.")
+            except ValueError:
+                print("Please enter a valid number or 'all'.")
+    
     return True
 
 def handle_inventory(inventory, using_fists=False):
@@ -457,67 +521,75 @@ def handle_armor(armor_inventory, equipped_armor):
         print(f"Equipped: {equipped_armor['name']} (Defense: {equipped_armor['defense']}, Durability: {equipped_armor['durability']})")
     return True
 
-def handle_drop(inventory, current_room):
-    """Handle drop command"""
-    if not inventory:
-        print("You have no weapons to drop.")
+def handle_drop(inventory, armor_inventory, equipped_armor, current_room):
+    """Handle drop command for both weapons and armor"""
+    # Check if player has anything to drop
+    if not inventory and not armor_inventory:
+        print("You have nothing to drop.")
         return True
     
-    print("Which weapon do you want to drop?")
-    for i, weapon in enumerate(inventory):
-        if weapon.get("name") == "Spell Book":
-            print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']})")
-        elif weapon.get("requires_mana"):
-            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)})")
-        else:
-            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']})")
+    # Show available items to drop
+    print("What do you want to drop?")
+    
+    # Show weapons
+    if inventory:
+        print("\nWeapons:")
+        for i, weapon in enumerate(inventory):
+            if weapon.get("name") == "Spell Book":
+                print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']})")
+            elif weapon.get("requires_mana"):
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)})")
+            else:
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']})")
+    
+    # Show armor
+    if armor_inventory:
+        print("\nArmor:")
+        for i, armor in enumerate(armor_inventory):
+            equipped_tag = " [EQUIPPED]" if equipped_armor and equipped_armor == armor else ""
+            print(f"  {len(inventory) + i + 1}. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}){equipped_tag}")
+    
+    # Calculate total items
+    total_items = len(inventory) + len(armor_inventory)
+    
     try:
-        choice = int(input("Enter number: ")) - 1
-        if 0 <= choice < len(inventory):
-            dropped_weapon = inventory.pop(choice)
-            # Check if this was the currently held weapon (first in inventory)
-            if choice == 0:
-                print(f"You dropped your currently held weapon: {dropped_weapon['name']}")
-                if inventory:
-                    print(f"You are now holding: {inventory[0]['name']}")
+        choice = int(input(f"Enter number (1-{total_items}): ")) - 1
+        if 0 <= choice < total_items:
+            if choice < len(inventory):
+                # Dropping a weapon
+                dropped_item = inventory.pop(choice)
+                # Check if this was the currently held weapon (first in inventory)
+                if choice == 0:
+                    print(f"You dropped your currently held weapon: {dropped_item['name']}")
+                    if inventory:
+                        print(f"You are now holding: {inventory[0]['name']}")
+                    else:
+                        print("You are now holding no weapon (using fists).")
                 else:
-                    print("You are now holding no weapon (using fists).")
+                    print(f"You dropped the {dropped_item['name']}.")
+                
+                # Initialize weapons list if it doesn't exist
+                if "weapons" not in current_room:
+                    current_room["weapons"] = []
+                current_room["weapons"].append(dropped_item)
+                
             else:
-                print(f"You dropped the {dropped_weapon['name']}.")
-            # Initialize weapons list if it doesn't exist
-            if "weapons" not in current_room:
-                current_room["weapons"] = []
-            current_room["weapons"].append(dropped_weapon)
-        else:
-            print("Invalid choice.")
-    except ValueError:
-        print("Please enter a valid number.")
-    return True
-
-def handle_drop_armor(armor_inventory, equipped_armor, current_room):
-    """Handle drop_armor command"""
-    if not armor_inventory:
-        print("You have no armor to drop.")
-        return True
-    
-    print("Which armor do you want to drop?")
-    for i, armor in enumerate(armor_inventory):
-        print(f"  {i+1}. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']})")
-    try:
-        choice = int(input("Enter number: ")) - 1
-        if 0 <= choice < len(armor_inventory):
-            dropped_armor = armor_inventory.pop(choice)
-            # Unequip if this was the equipped armor
-            if equipped_armor and equipped_armor == dropped_armor:
-                equipped_armor = None
-                print(f"You unequipped and dropped your equipped armor: {dropped_armor['name']}")
-                print("You are now wearing no armor.")
-            else:
-                print(f"You dropped the {dropped_armor['name']}.")
-            # Initialize armors list if it doesn't exist
-            if "armors" not in current_room:
-                current_room["armors"] = []
-            current_room["armors"].append(dropped_armor)
+                # Dropping armor
+                armor_choice = choice - len(inventory)
+                dropped_item = armor_inventory.pop(armor_choice)
+                
+                # Unequip if this was the equipped armor
+                if equipped_armor and equipped_armor == dropped_item:
+                    equipped_armor = None
+                    print(f"You unequipped and dropped your equipped armor: {dropped_item['name']}")
+                    print("You are now wearing no armor.")
+                else:
+                    print(f"You dropped the {dropped_item['name']}.")
+                
+                # Initialize armors list if it doesn't exist
+                if "armors" not in current_room:
+                    current_room["armors"] = []
+                current_room["armors"].append(dropped_item)
         else:
             print("Invalid choice.")
     except ValueError:
@@ -624,6 +696,138 @@ def handle_absorb(current_room, player_max_hp, player_hp, player_stamina, player
         print("There's no crystal here to absorb.")
     
     return player_max_hp, player_hp, player_stamina, player_max_mana, player_mana
+
+def handle_consume(current_room, player_max_hp, player_hp, player_stamina, player_max_stamina, 
+                   player_mana, player_max_mana, player_potions, stamina_potions, mana_potions):
+    """Handle consume command for crystals and potions"""
+    
+    # Check for crystals first (highest priority)
+    if current_room.get("crystal_type"):
+        crystal_type = current_room["crystal_type"]
+        
+        if crystal_type == "life":
+            player_max_hp += 10
+            player_hp += 20
+            print("You absorb the life crystal!")
+            print(f"Max HP increased to {player_max_hp}!")
+            print(f"Current HP increased to {player_hp}!")
+            current_room["crystal_type"] = None
+            return player_max_hp, player_hp, player_stamina, player_max_mana, player_mana
+            
+        elif crystal_type == "stamina":
+            player_max_stamina += 10
+            player_stamina += 10
+            print("You absorb the stamina crystal!")
+            print(f"Max stamina increased to {player_max_stamina}!")
+            print(f"Current stamina increased to {player_stamina}!")
+            current_room["crystal_type"] = None
+            return player_max_hp, player_hp, player_stamina, player_max_stamina, player_mana
+            
+        elif crystal_type == "mana":
+            player_max_mana += 10
+            player_mana += 10
+            print("You absorb the mana crystal!")
+            print(f"Max mana increased to {player_max_mana}!")
+            print(f"Current mana increased to {player_mana}!")
+            current_room["crystal_type"] = None
+            return player_max_hp, player_hp, player_stamina, player_max_stamina, player_mana
+            
+        elif crystal_type == "life_stamina":
+            player_max_hp += 10
+            player_hp += 20
+            player_max_stamina += 10
+            player_stamina += 10
+            print("You absorb both crystals!")
+            print(f"Max HP increased to {player_max_hp}!")
+            print(f"Current HP increased to {player_hp}!")
+            print(f"Max stamina increased to {player_max_stamina}!")
+            print(f"Current stamina increased to {player_stamina}!")
+            current_room["crystal_type"] = None
+            return player_max_hp, player_hp, player_stamina, player_max_stamina, player_mana
+            
+        elif crystal_type == "life_mana":
+            player_max_hp += 10
+            player_hp += 20
+            player_max_mana += 10
+            player_mana += 10
+            print("You absorb both crystals!")
+            print(f"Max HP increased to {player_max_hp}!")
+            print(f"Current HP increased to {player_hp}!")
+            print(f"Max mana increased to {player_max_mana}!")
+            print(f"Current mana increased to {player_mana}!")
+            current_room["crystal_type"] = None
+            return player_max_hp, player_hp, player_stamina, player_max_stamina, player_mana
+            
+        elif crystal_type == "all":
+            player_max_hp += 10
+            player_hp += 20
+            player_max_stamina += 10
+            player_stamina += 10
+            player_max_mana += 10
+            player_mana += 10
+            print("You absorb all three crystals!")
+            print(f"Max HP increased to {player_max_hp}!")
+            print(f"Current HP increased to {player_hp}!")
+            print(f"Max stamina increased to {player_max_stamina}!")
+            print(f"Current stamina increased to {player_stamina}!")
+            print(f"Max mana increased to {player_max_mana}!")
+            print(f"Current mana increased to {player_mana}!")
+            current_room["crystal_type"] = None
+            return player_max_hp, player_hp, player_stamina, player_max_stamina, player_mana
+    
+    # If no crystals, show potion options
+    print("What would you like to consume?")
+    
+    potion_options = []
+    if player_potions > 0:
+        potion_options.append(("health", player_potions))
+    if stamina_potions > 0:
+        potion_options.append(("stamina", stamina_potions))
+    if mana_potions > 0:
+        potion_options.append(("mana", mana_potions))
+    
+    if not potion_options:
+        print("You have no potions to use.")
+        return player_max_hp, player_hp, player_stamina, player_max_stamina, player_mana
+    
+    print("Available potions:")
+    for i, (potion_type, count) in enumerate(potion_options, 1):
+        print(f"  {i}. {potion_type.title()} Potion ({count} available)")
+    
+    try:
+        choice = int(input(f"Enter number (1-{len(potion_options)}): ")) - 1
+        if 0 <= choice < len(potion_options):
+            potion_type, count = potion_options[choice]
+            
+            if potion_type == "health":
+                if player_potions > 0:
+                    player_potions -= 1
+                    player_hp = min(player_hp + 30, player_max_hp)
+                    print(f"You used a health potion! HP: {player_hp}/{player_max_hp}")
+                else:
+                    print("You don't have any health potions!")
+                    
+            elif potion_type == "stamina":
+                if stamina_potions > 0:
+                    stamina_potions -= 1
+                    player_stamina = min(player_stamina + 10, player_max_stamina)
+                    print(f"You used a stamina potion! Stamina: {player_stamina}/{player_max_stamina}")
+                else:
+                    print("You don't have any stamina potions!")
+                    
+            elif potion_type == "mana":
+                if mana_potions > 0:
+                    mana_potions -= 1
+                    player_mana = min(player_mana + 15, player_max_mana)
+                    print(f"You used a mana potion! Mana: {player_mana}/{player_max_mana}")
+                else:
+                    print("You don't have any mana potions!")
+        else:
+            print("Invalid choice.")
+    except ValueError:
+        print("Please enter a valid number.")
+    
+    return player_max_hp, player_hp, player_stamina, player_max_stamina, player_mana
 
 def handle_run(current_room, player_stamina, player_x, player_y):
     """Handle run command"""
@@ -775,3 +979,127 @@ def handle_repair(current_room, inventory, armor_inventory, player_money):
         print("Please enter a valid number.")
     
     return True, player_money 
+
+def handle_waypoint(command_parts, waypoints, waypoint_scrolls, player_floor, player_x, player_y):
+    """Handle enhanced waypoint command with subcommands"""
+    if len(command_parts) < 2:
+        print("Waypoint command usage:")
+        print("  waypoint add <name> - Add a waypoint at current location")
+        print("  waypoint view - List all waypoints")
+        print("  waypoint delete <name> - Delete a specific waypoint")
+        print("  waypoint teleport - Use waypoint scroll to teleport")
+        return waypoints, waypoint_scrolls
+    
+    subcommand = command_parts[1].lower()
+    
+    if subcommand == "add":
+        if len(command_parts) < 3:
+            print("Usage: waypoint add <name>")
+            return waypoints, waypoint_scrolls
+        
+        name = " ".join(command_parts[2:])
+        if len(waypoints) >= 10:
+            print("You can only have up to 10 waypoints!")
+            return waypoints, waypoint_scrolls
+        
+        waypoints[name] = (player_floor, player_x, player_y)
+        print(f"Waypoint '{name}' added at Floor {player_floor} ({player_x}, {player_y})")
+        
+    elif subcommand == "view":
+        if not waypoints:
+            print("No waypoints set.")
+        else:
+            print("\n=== WAYPOINTS ===")
+            for i, (name, (floor, x, y)) in enumerate(waypoints.items(), 1):
+                print(f"  {i}. {name}: Floor {floor} ({x}, {y})")
+            print("==================")
+    
+    elif subcommand == "delete":
+        if len(command_parts) < 3:
+            print("Usage: waypoint delete <name>")
+            return waypoints, waypoint_scrolls
+        
+        name = " ".join(command_parts[2:])
+        if name in waypoints:
+            del waypoints[name]
+            print(f"Waypoint '{name}' deleted.")
+        else:
+            print(f"Waypoint '{name}' not found.")
+    
+    elif subcommand == "teleport":
+        if waypoint_scrolls <= 0:
+            print("You don't have any waypoint scrolls to use.")
+            return waypoints, waypoint_scrolls
+        
+        if not waypoints:
+            print("You don't have any waypoints to teleport to.")
+            return waypoints, waypoint_scrolls
+        
+        print("\nSelect waypoint to teleport to:")
+        waypoint_list = list(waypoints.items())
+        for i, (name, (floor, x, y)) in enumerate(waypoint_list, 1):
+            print(f"  {i}. {name} at Floor {floor} ({x}, {y})")
+        
+        try:
+            choice = int(input("Enter number: ")) - 1
+            if 0 <= choice < len(waypoint_list):
+                name, (floor, x, y) = waypoint_list[choice]
+                waypoint_scrolls -= 1
+                print(f"You use a waypoint scroll and teleport to {name}!")
+                print(f"You are now at Floor {floor} ({x}, {y})")
+                print(f"Waypoint scrolls remaining: {waypoint_scrolls}")
+                # Note: The actual teleportation would be handled by the main game loop
+                # This function just handles the scroll consumption and waypoint selection
+            else:
+                print("Invalid choice.")
+        except ValueError:
+            print("Please enter a valid number.")
+    
+    else:
+        print(f"Unknown waypoint subcommand: {subcommand}")
+        print("Available subcommands: add, view, delete, teleport")
+    
+    return waypoints, waypoint_scrolls 
+
+def handle_equipment(inventory, armor_inventory, equipped_armor, using_fists):
+    """Handle equipment command to show both weapons and armor"""
+    print("\n=== EQUIPMENT ===")
+    
+    # Show weapons section
+    print("Weapons:")
+    if not inventory:
+        print("  None (using fists)")
+    else:
+        for i, weapon in enumerate(inventory):
+            if weapon.get("name") == "Spell Book":
+                print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']})")
+            elif weapon.get("requires_mana"):
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)})")
+            else:
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']})")
+    
+    # Show armor section
+    print("\nArmor:")
+    if not armor_inventory:
+        print("  None")
+    else:
+        for i, armor in enumerate(armor_inventory):
+            equipped_tag = " [EQUIPPED]" if equipped_armor and equipped_armor == armor else ""
+            print(f"  {i+1}. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}){equipped_tag}")
+    
+    # Show current status
+    print(f"\nCurrent Status:")
+    if using_fists:
+        print("  Weapon: Fists (Damage: 4, Durability: Infinite)")
+    elif inventory:
+        print(f"  Weapon: {inventory[0]['name']}")
+    else:
+        print("  Weapon: None")
+    
+    if equipped_armor:
+        print(f"  Armor: {equipped_armor['name']}")
+    else:
+        print("  Armor: None")
+    
+    print("==================")
+    return True 
