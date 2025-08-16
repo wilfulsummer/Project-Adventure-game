@@ -319,22 +319,16 @@ def main():
             section = command[6:].lower().strip()
             if section == "combat":
                 show_combat_help()
-                return
             elif section == "movement":
                 show_movement_help()
-                return
             elif section == "items":
                 show_items_help()
-                return
             elif section == "resources":
                 show_resources_help()
-                return
             elif section == "progression":
                 show_progression_help()
-                return
             elif section == "utility":
                 show_utility_help()
-                return
             elif section == "developer":
                 # Show developer help if developer mod is loaded and enabled
                 try:
@@ -344,23 +338,22 @@ def main():
                     else:
                         print("Developer mode is not enabled.")
                         print("Enable developer mode at startup to access developer tools.")
-                    return
                 except ImportError:
                     print("Developer mod is not loaded.")
                     print("Developer tools are not available.")
-                    return
             elif section == "all":
                 show_all_help()
-                return
             else:
                 # Check if this is a mod guide section
                 try:
                     from mods.mod_loader import mod_loader
                     mod_guides = mod_loader.get_mod_guides()
                     
+                    guide_found = False
                     for guide_id, guide_data in mod_guides.items():
                         try:
                             if guide_data.get('name') == section:
+                                guide_found = True
                                 mod_name = guide_id.split('.')[0]
                                 
                                 # Check if guide requires permission and if it's granted
@@ -372,17 +365,17 @@ def main():
                                             if not is_developer_mode_enabled():
                                                 print(f"Access to '{section}' guide requires permission.")
                                                 print("Enable developer mode to access this guide.")
-                                                return
+                                                continue
                                         except ImportError:
                                             print(f"Could not verify permission for '{section}' guide.")
-                                            return
+                                            continue
                                 
                                 # Show the guide
                                 guide_function = guide_data.get('function')
                                 if guide_function and callable(guide_function):
                                     try:
                                         guide_function()
-                                        return
+                                        break  # Found and displayed the guide, exit the loop
                                     except Exception as e:
                                         print(f"Error displaying guide '{section}': {e}")
                                         print("The guide may be corrupted or have invalid content.")
@@ -392,10 +385,10 @@ def main():
                                             manual_bug_report(e, f"Guide display: {section}")
                                         except:
                                             pass  # Don't crash the bug reporting system
-                                        return
+                                        break  # Exit the loop after error
                                 else:
                                     print(f"Guide '{section}' is not properly configured.")
-                                    return
+                                    break  # Exit the loop after error
                         except Exception as e:
                             print(f"Warning: Could not process guide '{guide_id}': {e}")
                             # Generate bug report for guide processing errors
@@ -407,30 +400,30 @@ def main():
                             continue
                     
                     # If we get here, no mod guide was found
-                    print(f"Unknown guide section: '{section}'")
-                    available_sections = ["combat", "movement", "items", "resources", "progression", "utility", "all"]
-                    
-                    # Add mod guide sections
-                    try:
-                        for guide_id, guide_data in mod_guides.items():
-                            try:
-                                guide_name = guide_data.get('name', 'unknown')
-                                if guide_name not in available_sections:
-                                    available_sections.insert(-1, guide_name)
-                            except Exception as e:
-                                print(f"Warning: Could not process guide '{guide_id}': {e}")
-                                continue
-                    except Exception as e:
-                        print(f"Warning: Could not load mod guide sections: {e}")
-                        # Generate bug report for mod guides loading errors
+                    if not guide_found:
+                        print(f"Unknown guide section: '{section}'")
+                        available_sections = ["combat", "movement", "items", "resources", "progression", "utility", "all"]
+                        
+                        # Add mod guide sections
                         try:
-                            from bug_reporting import manual_bug_report
-                            manual_bug_report(e, "Mod guides loading")
-                        except:
-                            pass  # Don't crash the bug reporting system
-                        pass
-                    
-                    print(f"Available sections: {', '.join(available_sections)}")
+                            for guide_id, guide_data in mod_guides.items():
+                                try:
+                                    guide_name = guide_data.get('name', 'unknown')
+                                    if guide_name not in available_sections:
+                                        available_sections.insert(-1, guide_name)
+                                except Exception as e:
+                                    print(f"Warning: Could not process guide '{guide_id}': {e}")
+                                    continue
+                        except Exception as e:
+                            print(f"Warning: Could not load mod guide sections: {e}")
+                            # Generate bug report for mod guides loading errors
+                            try:
+                                from bug_reporting import manual_bug_report
+                                manual_bug_report(e, "Mod guides loading")
+                            except:
+                                pass  # Don't crash the bug reporting system
+                        
+                        print(f"Available sections: {', '.join(available_sections)}")
                     
                 except ImportError:
                     print(f"Unknown guide section: '{section}'")
