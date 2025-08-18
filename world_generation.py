@@ -16,10 +16,13 @@ def create_weapon(x, y):
     durability_bonus = scaled * random.randint(1, 2)
     weapon_name = random.choice(weapon_names)
     
+    # 4% chance for weapon to spawn broken
+    is_broken = random.random() < 0.04
+    
     # Make staffs stronger but require mana
     if weapon_name == "Magic Staff":
         damage = base_damage + damage_bonus + random.randint(1, 3)  # +1 to +3 extra damage
-        durability = base_durability + durability_bonus + random.randint(5, 8)  # +5 to +8 extra durability
+        durability = 0 if is_broken else (base_durability + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
         return {
             "name": weapon_name,
             "damage": damage,
@@ -29,7 +32,7 @@ def create_weapon(x, y):
             "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
         }
     elif weapon_name == "Spell Book":
-        durability = random.randint(15, 25) + durability_bonus + random.randint(5, 8)  # +5 to +8 extra durability
+        durability = 0 if is_broken else (random.randint(15, 25) + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
         return {
             "name": weapon_name,
             "damage": "???",
@@ -40,7 +43,7 @@ def create_weapon(x, y):
         # Swords are versatile - good damage and durability for all situations
         # +2-4 base damage and +3-5 durability bonus
         damage = base_damage + damage_bonus + random.randint(2, 4)
-        durability = base_durability + durability_bonus + random.randint(3, 5)
+        durability = 0 if is_broken else (base_durability + durability_bonus + random.randint(3, 5))
         return {
             "name": weapon_name,
             "damage": damage,
@@ -48,7 +51,7 @@ def create_weapon(x, y):
             "max_durability": durability
         }
     else:
-        durability = base_durability + durability_bonus
+        durability = 0 if is_broken else (base_durability + durability_bonus)
         return {
             "name": weapon_name,
             "damage": base_damage + damage_bonus,
@@ -63,7 +66,11 @@ def create_armor(x, y):
     # Cap scaling at 100 rooms away from (0,0)
     capped_distance = min(distance, 100)
     scaled = capped_distance // 4  # Reduced scaling from //2 to //4
-    durability = base_durability + scaled * random.choice([0, 1])
+    
+    # 4% chance for armor to spawn broken
+    is_broken = random.random() < 0.04
+    
+    durability = 0 if is_broken else (base_durability + scaled * random.choice([0, 1]))
     return {
         "name": random.choice(["Leather Armor", "Iron Mail", "Bone Plate", "Troll Hide"]),
         "defense": base_defense + scaled * random.choice([0, 1]),
@@ -82,10 +89,13 @@ def create_chest_weapon(dist):
     durability_bonus = scaled * random.randint(1, 2)
     weapon_name = random.choice(weapon_names)
     
+    # 4% chance for weapon to spawn broken
+    is_broken = random.random() < 0.04
+    
     # Make staffs stronger but require mana
     if weapon_name == "Magic Staff":
         damage = base_damage + damage_bonus + random.randint(1, 3)  # +1 to +3 extra damage
-        durability = base_durability + durability_bonus + random.randint(5, 8)  # +5 to +8 extra durability
+        durability = 0 if is_broken else (base_durability + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
         return {
             "name": weapon_name,
             "damage": damage,
@@ -95,7 +105,7 @@ def create_chest_weapon(dist):
             "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
         }
     elif weapon_name == "Spell Book":
-        durability = random.randint(15, 25) + durability_bonus + random.randint(5, 8)  # +5 to +8 extra durability
+        durability = 0 if is_broken else (random.randint(15, 25) + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
         return {
             "name": weapon_name,
             "damage": "???",
@@ -103,7 +113,7 @@ def create_chest_weapon(dist):
             "max_durability": durability
         }
     else:
-        durability = base_durability + durability_bonus
+        durability = 0 if is_broken else (base_durability + durability_bonus)
         return {
             "name": weapon_name,
             "damage": base_damage + damage_bonus,
@@ -120,7 +130,11 @@ def create_chest_armor(x, y):
     base_durability = random.randint(8, 15)
     bonus_def = scaled * random.choice([1, 2])
     bonus_dur = scaled * random.choice([1, 2])
-    durability = base_durability + bonus_dur
+    
+    # 4% chance for armor to spawn broken
+    is_broken = random.random() < 0.04
+    
+    durability = 0 if is_broken else (base_durability + bonus_dur)
     return {
         "name": random.choice(["Enchanted Mail", "Reinforced Hide", "Darksteel Vest", "Trollbone Harness"]),
         "defense": base_defense + bonus_def,
@@ -295,6 +309,7 @@ def create_room(floor, x, y, learned_spells):
             "has_key": random.random() < 0.4,
             "armor": create_armor(x, y) if random.random() < 0.35 else None,
             "life_crystal": random.random() < 0.1,
+            "health_potions": random.randint(2, 4) if random.random() < 0.8 else 0,
             "stamina_potions": random.randint(1, 2) if random.random() < 0.6 else 0,
             "mana_potions": random.randint(1, 2) if random.random() < 0.6 else 0,
             "waypoint_scrolls": random.randint(1, 2) if random.random() < 0.3 else 0,

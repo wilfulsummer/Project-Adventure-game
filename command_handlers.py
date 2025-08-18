@@ -379,6 +379,12 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
             if len(inventory) >= MAX_WEAPONS:
                 print("Your weapon inventory is full! Drop a weapon first.")
                 return True
+            
+            # Check if weapon is broken
+            if item['durability'] <= 0:
+                print(f"You cannot pick up {item['name']} - it's broken!")
+                return True
+            
             inventory.append(item)
             current_room["weapons"].remove(item)
             print(f"You picked up the {item['name']}!")
@@ -386,6 +392,12 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
             if len(armor_inventory) >= MAX_ARMOR:
                 print("Your armor inventory is full! Drop some armor first.")
                 return True
+            
+            # Check if armor is broken
+            if item['durability'] <= 0:
+                print(f"You cannot pick up {item['name']} - it's broken!")
+                return True
+            
             armor_inventory.append(item)
             current_room["armors"].remove(item)
             print(f"You picked up the {item['name']}!")
@@ -400,12 +412,14 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
         print("  all - Take all items (if you have space)")
         for i, (item_type, item) in enumerate(available_items, 1):
             if item_type == "weapon":
+                status = " [BROKEN]" if item['durability'] <= 0 else ""
                 if item.get("requires_mana"):
-                    print(f"  {i}. {item['name']} (Weapon - Damage: {item['damage']}, Durability: {item['durability']}, Mana Cost: {item.get('mana_cost', 10)})")
+                    print(f"  {i}. {item['name']} (Weapon - Damage: {item['damage']}, Durability: {item['durability']}, Mana Cost: {item.get('mana_cost', 10)}){status}")
                 else:
-                    print(f"  {i}. {item['name']} (Weapon - Damage: {item['damage']}, Durability: {item['durability']})")
+                    print(f"  {i}. {item['name']} (Weapon - Damage: {item['damage']}, Durability: {item['durability']}){status}")
             elif item_type == "armor":
-                print(f"  {i}. {item['name']} (Armor - Defense: {item['defense']}, Durability: {item['durability']})")
+                status = " [BROKEN]" if item['durability'] <= 0 else ""
+                print(f"  {i}. {item['name']} (Armor - Defense: {item['defense']}, Durability: {item['durability']}){status}")
             elif item_type == "mysterious_key":
                 print(f"  {i}. Mysterious Key (Floor {item['floor']})")
         
@@ -430,6 +444,12 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
             weapons_to_take = [item for item_type, item in available_items if item_type == "weapon"]
             for weapon in weapons_to_take:
                 if len(inventory) < MAX_WEAPONS:
+                    # Check if weapon is broken
+                    if weapon['durability'] <= 0:
+                        print(f"You cannot pick up {weapon['name']} - it's broken!")
+                        items_skipped += 1
+                        continue
+                    
                     inventory.append(weapon)
                     current_room["weapons"].remove(weapon)
                     print(f"You picked up the {weapon['name']}!")
@@ -441,6 +461,12 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
             armors_to_take = [item for item_type, item in available_items if item_type == "armor"]
             for armor in armors_to_take:
                 if len(armor_inventory) < MAX_ARMOR:
+                    # Check if armor is broken
+                    if armor['durability'] <= 0:
+                        print(f"You cannot pick up {armor['name']} - it's broken!")
+                        items_skipped += 1
+                        continue
+                    
                     armor_inventory.append(armor)
                     current_room["armors"].remove(armor)
                     print(f"You picked up the {armor['name']}!")
@@ -464,6 +490,12 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
                         if len(inventory) >= MAX_WEAPONS:
                             print("Your weapon inventory is full! Drop a weapon first.")
                             return True
+                        
+                        # Check if weapon is broken
+                        if item['durability'] <= 0:
+                            print(f"You cannot pick up {item['name']} - it's broken!")
+                            return True
+                        
                         inventory.append(item)
                         current_room["weapons"].remove(item)
                         print(f"You picked up the {item['name']}!")
@@ -471,6 +503,12 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
                         if len(armor_inventory) >= MAX_ARMOR:
                             print("Your armor inventory is full! Drop some armor first.")
                             return True
+                        
+                        # Check if armor is broken
+                        if item['durability'] <= 0:
+                            print(f"You cannot pick up {item['name']} - it's broken!")
+                            return True
+                        
                         armor_inventory.append(item)
                         current_room["armors"].remove(item)
                         print(f"You picked up the {item['name']}!")
@@ -604,11 +642,18 @@ def handle_equip(armor_inventory):
     
     print("Which armor do you want to equip?")
     for i, armor in enumerate(armor_inventory):
-        print(f"  {i+1}. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']})")
+        status = " [BROKEN]" if armor['durability'] <= 0 else ""
+        print(f"  {i+1}. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}){status}")
     try:
         choice = int(input("Enter number: ")) - 1
         if 0 <= choice < len(armor_inventory):
             equipped_armor = armor_inventory[choice]
+            
+            # Check if armor is broken
+            if equipped_armor['durability'] <= 0:
+                print(f"You cannot equip {equipped_armor['name']} - it's broken!")
+                return True, None
+            
             print(f"You equipped the {equipped_armor['name']}!")
             return True, equipped_armor
         else:
@@ -622,12 +667,13 @@ def handle_switch(inventory):
     print("Which weapon do you want to use?")
     print("  0. Fists (Damage: 4, Durability: Infinite)")
     for i, weapon in enumerate(inventory):
+        status = " [BROKEN]" if weapon['durability'] <= 0 else ""
         if weapon.get("name") == "Spell Book":
-            print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']})")
+            print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}){status}")
         elif weapon.get("requires_mana"):
-            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)})")
+            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)}){status}")
         else:
-            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']})")
+            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}){status}")
     try:
         choice = int(input("Enter number: ")) - 1
         if choice == -1:
@@ -643,6 +689,13 @@ def handle_switch(inventory):
             return True, True  # Return success and using_fists=True
         elif 0 <= choice < len(inventory):
             # Switch to weapon
+            weapon = inventory[choice]
+            
+            # Check if weapon is broken
+            if weapon['durability'] <= 0:
+                print(f"You cannot switch to {weapon['name']} - it's broken!")
+                return True, False
+            
             # Move selected weapon to front of inventory
             weapon = inventory.pop(choice)
             inventory.insert(0, weapon)

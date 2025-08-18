@@ -52,7 +52,7 @@ def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, pla
               player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
               player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
               unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
-              player_level=1, player_xp=0, player_xp_to_next=100, enemies_defeated=0, bosses_defeated=0,
+              player_level=1, player_xp=0, player_xp_to_next=100, player_skill_points=0, enemies_defeated=0, bosses_defeated=0,
               total_damage_dealt=0, total_damage_taken=0, critical_hits=0, attack_count=0, rooms_explored=0,
               floors_visited=None, move_count=0, items_collected=0, weapons_broken=0, gold_earned=0):
     
@@ -113,6 +113,7 @@ def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, pla
         "player_level": player_level,
         "player_xp": player_xp,
         "player_xp_to_next": player_xp_to_next,
+        "player_skill_points": player_skill_points,
         "enemies_defeated": enemies_defeated,
         "bosses_defeated": bosses_defeated,
         "total_damage_dealt": total_damage_dealt,
@@ -142,7 +143,7 @@ def auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_fl
                    player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                    player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
                    unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
-                   player_level=1, player_xp=0, player_xp_to_next=100, enemies_defeated=0, bosses_defeated=0,
+                   player_level=1, player_xp=0, player_xp_to_next=100, player_skill_points=0, enemies_defeated=0, bosses_defeated=0,
                    total_damage_dealt=0, total_damage_taken=0, critical_hits=0, attack_count=0, rooms_explored=0,
                    floors_visited=None, move_count=0, items_collected=0, weapons_broken=0, gold_earned=0):
     """Auto-save the game (overwrites previous auto-save)"""
@@ -303,7 +304,23 @@ def load_game(save_name=None):
         "learned_spells": learned_spells,
         "spell_scrolls": spell_scrolls,
         "using_fists": using_fists,
-        "discovered_uniques": discovered_uniques
+        "discovered_uniques": discovered_uniques,
+        "player_level": data.get("player_level", 1),
+        "player_xp": data.get("player_xp", 0),
+        "player_xp_to_next": data.get("player_xp_to_next", 100),
+        "player_skill_points": data.get("player_skill_points", 0),
+        "enemies_defeated": data.get("enemies_defeated", 0),
+        "bosses_defeated": data.get("bosses_defeated", 0),
+        "total_damage_dealt": data.get("total_damage_dealt", 0),
+        "total_damage_taken": data.get("total_damage_taken", 0),
+        "critical_hits": data.get("critical_hits", 0),
+        "attack_count": data.get("attack_count", 0),
+        "rooms_explored": data.get("rooms_explored", 0),
+        "floors_visited": data.get("floors_visited", []),
+        "move_count": data.get("move_count", 0),
+        "items_collected": data.get("items_collected", 0),
+        "weapons_broken": data.get("weapons_broken", 0),
+        "gold_earned": data.get("gold_earned", 0)
     }
 
 def delete_save(save_name):
@@ -335,7 +352,9 @@ def show_save_info(save_name):
             data = json.load(f)
         
         print(f"\n=== SAVE INFO: {data.get('save_name', save_name)} ===")
-        print(f"Player Level: Floor {data.get('player_floor', 'Unknown')}")
+        print(f"Player Level: {data.get('player_level', 'Unknown')}")
+        print(f"Skill Points: {data.get('player_skill_points', 'Unknown')}")
+        print(f"Floor: {data.get('player_floor', 'Unknown')}")
         print(f"Position: ({data.get('player_x', 'Unknown')}, {data.get('player_y', 'Unknown')})")
         print(f"HP: {data.get('player_hp', 'Unknown')}/{data.get('player_max_hp', 'Unknown')}")
         print(f"Stamina: {data.get('player_stamina', 'Unknown')}/{data.get('player_max_stamina', 'Unknown')}")
@@ -359,7 +378,8 @@ def save_game_old(worlds, inventory, armor_inventory, equipped_armor, player_flo
     return save_game("default", worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                      player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                      player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists)
+                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
+                     1, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
 def load_game_old():
     """Old load function for backward compatibility"""

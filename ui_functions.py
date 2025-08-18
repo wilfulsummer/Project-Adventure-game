@@ -130,16 +130,39 @@ def show_room(current_room, player_floor, player_x, player_y, inventory, player_
 
     if current_room.get("enemy"):
         e = current_room["enemy"]
-        tag = " [BOSS]" if e.get("is_boss") else ""
-        if e.get("is_training_dummy"):
-            tag = " [TRAINING]"
-            # Show ??? for training dummy HP until defeated
-            if "Training Dummy" not in discovered_enemies:
-                print(f"Enemy here: {e['name']}{tag} (HP: ???)")
+        
+        # Handle both single enemies (dict) and enemy lists (spider swarms)
+        if isinstance(e, list):
+            # Spider swarm or multiple enemies
+            if len(e) == 1:
+                # Single enemy remaining in swarm
+                enemy = e[0]
+                tag = " [BOSS]" if enemy.get("is_boss") else ""
+                if enemy.get("is_training_dummy"):
+                    tag = " [TRAINING]"
+                    if "Training Dummy" not in discovered_enemies:
+                        print(f"Enemy here: {enemy['name']}{tag} (HP: ???)")
+                    else:
+                        print(f"Enemy here: {enemy['name']}{tag} (HP: {enemy['hp']})")
+                else:
+                    print(f"Enemy here: {enemy['name']}{tag} (HP: {enemy['hp']})")
+            else:
+                # Multiple enemies in swarm
+                print(f"Enemies here: {len(e)} spiders")
+                for i, enemy in enumerate(e, 1):
+                    print(f"  {i}. {enemy['name']} (HP: {enemy['hp']})")
+        else:
+            # Single enemy (dictionary)
+            tag = " [BOSS]" if e.get("is_boss") else ""
+            if e.get("is_training_dummy"):
+                tag = " [TRAINING]"
+                # Show ??? for training dummy HP until defeated
+                if "Training Dummy" not in discovered_enemies:
+                    print(f"Enemy here: {e['name']}{tag} (HP: ???)")
+                else:
+                    print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
             else:
                 print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
-        else:
-            print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
 
     if current_room.get("weapons"):
         print("Weapons here:")

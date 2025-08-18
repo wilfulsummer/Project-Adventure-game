@@ -9,6 +9,14 @@ from command_handlers import *
 
 def handle_player_death():
     """Handle player death and restart option"""
+    global player_floor, player_x, player_y, player_hp, player_max_hp, player_stamina, player_max_stamina
+    global player_mana, player_max_mana, player_money, player_potions, stamina_potions, mana_potions
+    global waypoint_scrolls, mysterious_keys, golden_keys, unlocked_floors, waypoints, discovered_enemies
+    global learned_spells, spell_scrolls, using_fists, inventory, armor_inventory, equipped_armor, armor_broken
+    global player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated
+    global total_damage_dealt, total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited
+    global move_count, items_collected, weapons_broken, gold_earned, discovered_uniques
+    
     print("\n=== GAME OVER ===")
     print("Your adventure has ended...")
     
@@ -16,7 +24,7 @@ def handle_player_death():
         choice = input("\nWould you like to restart? (yes/no): ").lower().strip()
         if choice in ['yes', 'y']:
             print("\nRestarting game...")
-            # Reset all game state variables
+            # Reset all game state variables for complete new save
             player_floor = 1
             player_x = 0
             player_y = 0
@@ -31,18 +39,41 @@ def handle_player_death():
             stamina_potions = 0
             mana_potions = 0
             waypoint_scrolls = 0
-            mysterious_keys = 0
+            mysterious_keys = {}
             golden_keys = 0
-            unlocked_floors = 1
-            waypoints = []
-            discovered_enemies = {}
+            unlocked_floors = set()
+            waypoints = {}
+            discovered_enemies = set()
             learned_spells = []
-            spell_scrolls = 0
+            spell_scrolls = {}
             using_fists = True
             inventory = []
             armor_inventory = []
             equipped_armor = None
             armor_broken = 0
+            
+            # Reset leveling system
+            player_level = 1
+            player_xp = 0
+            player_xp_to_next = 100
+            player_skill_points = 0
+            
+            # Reset all statistics
+            enemies_defeated = 0
+            bosses_defeated = 0
+            total_damage_dealt = 0
+            total_damage_taken = 0
+            critical_hits = 0
+            attack_count = 0
+            rooms_explored = 0
+            floors_visited = set()
+            move_count = 0
+            items_collected = 0
+            weapons_broken = 0
+            gold_earned = 0
+            
+            # Reset unique items
+            discovered_uniques = {}
             
             # Auto-save current state before clearing (in case they want to recover)
             try:
@@ -51,7 +82,7 @@ def handle_player_death():
                              player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                              player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
                              unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
-                             player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated, total_damage_dealt,
+                             player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated, total_damage_dealt,
                              total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
                              items_collected, weapons_broken, gold_earned)
                 print("(Auto-saved current state before restart!)")
@@ -84,7 +115,7 @@ def main():
     global learned_spells, spell_scrolls, using_fists
     global attack_count, critical_hits, total_damage_dealt, total_damage_taken, armor_broken
     global discovered_uniques
-    global player_level, player_xp, player_xp_to_next
+    global player_level, player_xp, player_xp_to_next, player_skill_points
     global enemies_defeated, bosses_defeated, rooms_explored, floors_visited, move_count
     global items_collected, weapons_broken, gold_earned
     
@@ -178,7 +209,7 @@ def main():
                              player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                              player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
                              unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
-                             player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated, total_damage_dealt,
+                             player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated, total_damage_dealt,
                              total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
                              items_collected, weapons_broken, gold_earned)
                 print("(Auto-saved before exit!)")
@@ -200,7 +231,7 @@ def main():
                      player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                      player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
                      unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
-                     player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated, total_damage_dealt,
+                     player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated, total_damage_dealt,
                      total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
                      items_collected, weapons_broken, gold_earned)
         elif command == "load":
@@ -221,7 +252,9 @@ def main():
                     player_level = loaded_data["player_level"]
                     player_xp = loaded_data["player_xp"]
                     player_xp_to_next = loaded_data["player_xp_to_next"]
+                    player_skill_points = loaded_data.get("player_skill_points", 0)
                     print(f"Leveling progress restored! Level {player_level}")
+                    print(f"Skill points restored: {player_skill_points}")
                 
                 # Update stats with loaded data
                 if "enemies_defeated" in loaded_data:
@@ -499,6 +532,7 @@ def main():
             print(f"\nCharacter Stats:")
             print(f"  Level: {player_level}/100")
             print(f"  XP: {player_xp}/{player_xp_to_next}")
+            print(f"  Skill Points: {player_skill_points}")
             print(f"  HP: {player_hp}/{player_max_hp}")
             print(f"  Stamina: {player_stamina}/{player_max_stamina}")
             print(f"  Mana: {player_mana}/{player_max_mana}")
@@ -571,7 +605,7 @@ def main():
                                      player_potions, stamina_potions, mana_potions, mysterious_keys, 
                                      golden_keys, unlocked_floors, waypoints, waypoint_scrolls, 
                                      discovered_enemies, learned_spells, spell_scrolls, using_fists,
-                                     player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated,
+                                     player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated,
                                      total_damage_dealt, total_damage_taken, critical_hits, attack_count,
                                      rooms_explored, floors_visited, move_count, items_collected, weapons_broken, gold_earned)
                         print("(Auto-saved!)")
@@ -749,7 +783,7 @@ def main():
                         print(f"You gained {xp_gained} XP!")
                         
                         # Check for level up
-                        new_xp, new_level, new_hp, new_max_hp, levels_gained, new_xp_to_next = add_xp_and_level_up(
+                        new_xp, new_level, new_hp, new_max_hp, levels_gained, new_xp_to_next, skill_points_gained = add_xp_and_level_up(
                             player_xp, player_level, player_hp, player_max_hp
                         )
                         
@@ -759,9 +793,11 @@ def main():
                             player_hp = new_hp
                             player_max_hp = new_max_hp
                             player_xp_to_next = new_xp_to_next
+                            player_skill_points += skill_points_gained
                             
                             print(f"🎉 LEVEL UP! You are now level {player_level}!")
                             print(f"Health increased! HP: {player_hp}/{player_max_hp}")
+                            print(f"Skill points gained: +{skill_points_gained} (Total: {player_skill_points})")
                             
                             if player_level >= 100:
                                 print("🏆 MAXIMUM LEVEL REACHED! You are a legendary warrior!")

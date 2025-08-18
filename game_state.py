@@ -31,6 +31,7 @@ player_level = 1
 player_xp = 0
 player_xp_to_next = 100
 max_level = 100
+player_skill_points = 0  # Skill points earned from leveling up
 
 # --- Statistics Tracking ---
 enemies_defeated = 0
@@ -44,4 +45,5 @@ floors_visited = set()
 move_count = 0
 items_collected = 0
 weapons_broken = 0
+armor_broken = 0
 gold_earned = 0 

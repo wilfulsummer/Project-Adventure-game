@@ -51,10 +51,11 @@ def calculate_xp_to_next_level(current_level):
 def add_xp_and_level_up(current_xp, current_level, current_hp, current_max_hp):
     """
     Add XP and handle leveling up
-    Returns: (new_xp, new_level, new_hp, new_max_hp, levels_gained, xp_to_next)
+    Returns: (new_xp, new_level, new_hp, new_max_hp, levels_gained, xp_to_next, skill_points_gained)
     """
     xp_to_next = calculate_xp_to_next_level(current_level)
     levels_gained = 0
+    skill_points_gained = 0
     new_xp = current_xp
     new_level = current_level
     new_hp = current_hp
@@ -65,6 +66,7 @@ def add_xp_and_level_up(current_xp, current_level, current_hp, current_max_hp):
         new_xp -= xp_to_next
         new_level += 1
         levels_gained += 1
+        skill_points_gained += 1  # +1 skill point per level
         
         # Apply level up bonuses
         new_max_hp += 2  # +2 max HP per level
@@ -73,7 +75,7 @@ def add_xp_and_level_up(current_xp, current_level, current_hp, current_max_hp):
         # Calculate XP needed for next level
         xp_to_next = calculate_xp_to_next_level(new_level)
     
-    return new_xp, new_level, new_hp, new_max_hp, levels_gained, xp_to_next
+    return new_xp, new_level, new_hp, new_max_hp, levels_gained, xp_to_next, skill_points_gained
 
 def get_level_progress(current_xp, current_level):
     """

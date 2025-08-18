@@ -260,18 +260,21 @@ def create_weapon(x, y):
   durability_bonus = scaled * random.randint(1, 2)
   weapon_name = random.choice(weapon_names)
   
+  # 4% chance for weapon to spawn broken
+  is_broken = random.random() < 0.04
+  
   # Make staffs stronger but require mana
   if weapon_name == "Magic Staff":
     damage = base_damage + damage_bonus + random.randint(1, 2)  # +1 to +2 extra damage
     return {
       "name": weapon_name,
       "damage": damage,
-      "durability": base_durability + durability_bonus,
+      "durability": 0 if is_broken else (base_durability + durability_bonus),
       "requires_mana": True,
       "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
     }
   elif weapon_name == "Spell Book":
-    durability = random.randint(15, 25) + durability_bonus
+    durability = 0 if is_broken else (random.randint(15, 25) + durability_bonus)
     return {
       "name": weapon_name,
       "damage": "???",
@@ -281,7 +284,7 @@ def create_weapon(x, y):
     return {
       "name": weapon_name,
       "damage": base_damage + damage_bonus,
-      "durability": base_durability + durability_bonus
+      "durability": 0 if is_broken else (base_durability + durability_bonus)
     }
 
 def create_armor(x, y):
@@ -291,10 +294,14 @@ def create_armor(x, y):
   # Cap scaling at 100 rooms away from (0,0)
   capped_distance = min(distance, 100)
   scaled = capped_distance // 4  # Reduced scaling from //2 to //4
+  
+  # 4% chance for armor to spawn broken
+  is_broken = random.random() < 0.04
+  
   return {
     "name": random.choice(["Leather Armor", "Iron Mail", "Bone Plate", "Leather Cloak", "Chain Vest", "Hide Armor", "Stone Plate", "Cloth Robes", "Studded Leather"]),
     "defense": base_defense + scaled * random.choice([0, 1]),
-    "durability": base_durability + scaled * random.choice([0, 1])
+    "durability": 0 if is_broken else (base_durability + scaled * random.choice([0, 1]))
   }
 
 def create_chest_weapon(dist):
@@ -308,18 +315,21 @@ def create_chest_weapon(dist):
   durability_bonus = scaled * random.randint(1, 2)
   weapon_name = random.choice(weapon_names)
   
+  # 4% chance for weapon to spawn broken
+  is_broken = random.random() < 0.04
+  
   # Make staffs stronger but require mana
   if weapon_name == "Magic Staff":
     damage = base_damage + damage_bonus + random.randint(1, 2)  # +1 to +2 extra damage
     return {
       "name": weapon_name,
       "damage": damage,
-      "durability": base_durability + durability_bonus,
+      "durability": 0 if is_broken else (base_durability + durability_bonus),
       "requires_mana": True,
       "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
     }
   elif weapon_name == "Spell Book":
-    durability = random.randint(15, 25) + durability_bonus
+    durability = 0 if is_broken else (random.randint(15, 25) + durability_bonus)
     return {
       "name": weapon_name,
       "damage": "???",
@@ -329,7 +339,7 @@ def create_chest_weapon(dist):
     return {
       "name": weapon_name,
       "damage": base_damage + damage_bonus,
-      "durability": base_durability + durability_bonus
+      "durability": 0 if is_broken else (base_durability + durability_bonus)
     }
 
 def create_chest_armor(x, y):
@@ -341,10 +351,14 @@ def create_chest_armor(x, y):
   base_durability = random.randint(8, 15)
   bonus_def = scaled * random.choice([1, 2])
   bonus_dur = scaled * random.choice([1, 2])
+  
+  # 4% chance for armor to spawn broken
+  is_broken = random.random() < 0.04
+  
   return {
     "name": random.choice(["Enchanted Mail", "Reinforced Hide", "Darksteel Vest", "Trollbone Harness"]),
     "defense": base_defense + bonus_def,
-    "durability": base_durability + bonus_dur
+    "durability": 0 if is_broken else (base_durability + bonus_dur)
   }
 
 def create_troll_hide_armor(x, y):
