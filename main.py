@@ -765,20 +765,20 @@ def main():
                     crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
                     if player_money >= crystal_price:
                         player_money -= crystal_price
-                        player_max_stamina += 20
-                        player_stamina = min(player_stamina + 40, player_max_stamina)
+                        player_max_stamina += 10
+                        player_stamina = min(player_stamina + 10, player_max_stamina)
                         shop["stamina_crystal"] = False  # Remove the crystal from shop
-                        print("You bought and absorbed a stamina crystal! +20 max stamina, +40 current stamina")
+                        print("You bought and absorbed a stamina crystal! +10 max stamina, +10 current stamina")
                     else:
                         print("You don't have enough gold.")
                 elif choice.lower() == "n" and shop.get("mana_crystal"):
                     crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
                     if player_money >= crystal_price:
                         player_money -= crystal_price
-                        player_max_mana += 20
-                        player_mana = min(player_mana + 40, player_max_mana)
+                        player_max_mana += 10
+                        player_mana = min(player_mana + 10, player_max_mana)
                         shop["mana_crystal"] = False  # Remove the crystal from shop
-                        print("You bought and absorbed a mana crystal! +20 max mana, +40 current mana")
+                        print("You bought and absorbed a mana crystal! +10 max mana, +10 current mana")
                     else:
                         print("You don't have enough gold.")
                 elif choice.lower() == "w" and shop.get("waypoint_scrolls", 0) > 0:

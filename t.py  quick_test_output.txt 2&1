@@ -1,5 +1,0 @@
-[33m92d4cfe[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Prepare for v0.1.6-alpha release
-[33m4cfce3f[m[33m ([m[1;33mtag: [m[1;33mv0.1.6-alpha[m[33m, [m[1;33mtag: [m[1;33mv0.1.5-alpha[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix guide system crash - remove invalid break statements
-[33m56851a6[m[33m ([m[1;33mtag: [m[1;33mv0.1.4-alpha[m[33m)[m Add comprehensive bug reporting for guide system crashes
-[33m1e90636[m[33m ([m[1;33mtag: [m[1;33mv0.1.3-alpha[m[33m)[m Fix PyInstaller to build console app instead of GUI app
-[33m65da387[m Fix PowerShell syntax in GitHub Actions workflow
