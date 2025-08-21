@@ -42,31 +42,67 @@ jobs:
         copy README.md Adventure_Game_Release\
         if (Test-Path "LICENSE") { copy LICENSE Adventure_Game_Release\ }
         
-        # Copy mods folder contents (but not the folder itself)
-        if (Test-Path "mods\mods.json") { copy mods\mods.json Adventure_Game_Release\mods\ }
-        if (Test-Path "mods\README.md") { copy mods\README.md Adventure_Game_Release\mods\ }
+        # Copy the entire mods folder structure
+        echo "Copying mods folder contents..."
+        xcopy mods\* Adventure_Game_Release\mods\ /E /I /Y
         
-        # Create a mods.json file if it doesn't exist
+        # Ensure mods.json exists and includes developer mod by default
         if (!(Test-Path "mods\mods.json")) {
-          echo '{"enabled_mods": []}' > Adventure_Game_Release\mods\mods.json
+          echo '{"enabled_mods": ["developer_mod"]}' > Adventure_Game_Release\mods\mods.json
+        } else {
+          # Copy existing mods.json but ensure developer_mod is enabled
+          copy mods\mods.json Adventure_Game_Release\mods\
+          # Check if developer_mod is already in enabled_mods, if not add it
+          powershell -Command "$config = Get-Content 'Adventure_Game_Release\mods\mods.json' | ConvertFrom-Json; if ('developer_mod' -notin $config.enabled_mods) { $config.enabled_mods += 'developer_mod'; $config | ConvertTo-Json -Depth 10 | Set-Content 'Adventure_Game_Release\mods\mods.json' }"
         }
         
-        # Create a simple installation guide in the main folder
-        echo "# Adventure Game Installation" > Adventure_Game_Release\INSTALL.md
+        # Create a comprehensive installation guide
+        echo "# Adventure Game v${{ github.ref_name }} Installation" > Adventure_Game_Release\INSTALL.md
         echo "" >> Adventure_Game_Release\INSTALL.md
+        echo "## Quick Start:" >> Adventure_Game_Release\INSTALL.md
         echo "1. Extract this folder anywhere on your computer" >> Adventure_Game_Release\INSTALL.md
         echo "2. Run Adventure_Game.exe to play" >> Adventure_Game_Release\INSTALL.md
-        echo "3. Check the mods folder for modding instructions" >> Adventure_Game_Release\INSTALL.md
-        echo "4. Save games are stored in the saves folder" >> Adventure_Game_Release\INSTALL.md
+        echo "3. Save games are stored in the saves folder" >> Adventure_Game_Release\INSTALL.md
+        echo "" >> Adventure_Game_Release\INSTALL.md
+        echo "## Developer Mode:" >> Adventure_Game_Release\INSTALL.md
+        echo "- Developer mode is ENABLED by default" >> Adventure_Game_Release\INSTALL.md
+        echo "- Use 'dev_help' to see developer commands" >> Adventure_Game_Release\INSTALL.md
+        echo "- Use 'dev_gold 1000' to get gold, 'dev_teleport 5' to teleport, etc." >> Adventure_Game_Release\INSTALL.md
+        echo "" >> Adventure_Game_Release\INSTALL.md
+        echo "## Modding Support:" >> Adventure_Game_Release\INSTALL.md
+        echo "- Check the mods folder for available mods" >> Adventure_Game_Release\INSTALL.md
+        echo "- Developer mod is included and enabled by default" >> Adventure_Game_Release\INSTALL.md
+        echo "- Add new mods by placing them in the mods folder" >> Adventure_Game_Release\INSTALL.md
+        echo "- Edit mods.json to enable/disable mods" >> Adventure_Game_Release\INSTALL.md
+        echo "" >> Adventure_Game_Release\INSTALL.md
+        echo "## Game Controls:" >> Adventure_Game_Release\INSTALL.md
+        echo "- Type 'guide' for in-game help" >> Adventure_Game_Release\INSTALL.md
+        echo "- Type 'help' for command list" >> Adventure_Game_Release\INSTALL.md
+        echo "- Type 'mods' to see loaded mods" >> Adventure_Game_Release\INSTALL.md
         
-        # Create a simple mod installation guide
-        echo "# Mod Installation Guide" > Adventure_Game_Release\mods\README.md
-        echo "" >> Adventure_Game_Release\mods\README.md
-        echo "To install mods:" >> Adventure_Game_Release\mods\README.md
-        echo "1. Download a mod folder" >> Adventure_Game_Release\mods\README.md
-        echo "2. Place it in this mods folder" >> Adventure_Game_Release\mods\README.md
-        echo "3. Edit mods.json to enable your mods" >> Adventure_Game_Release\mods\README.md
-        echo "4. Restart the game" >> Adventure_Game_Release\mods\README.md
+        # Create a comprehensive mod installation guide
+        echo "# Mod Installation Guide" > Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "## Included Mods:" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "- developer_mod: Developer tools and cheats (ENABLED by default)" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "- example_mod: Example mod showing all features (disabled by default)" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "## Installing New Mods:" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "1. Download a mod folder (e.g., 'my_mod')" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "2. Place it in this mods folder" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "3. Edit mods.json to add 'my_mod' to enabled_mods list" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "4. Restart the game" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "## Example mods.json:" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo '{' >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo '  "enabled_mods": ["developer_mod", "my_mod"]' >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo '}' >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "## Developer Mode Commands:" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "- dev_help: Show all developer commands" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "- dev_gold [amount]: Give yourself gold" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "- dev_teleport [floor]: Teleport to any floor" >> Adventure_Game_Release\mods\MOD_INSTALL.md
+        echo "- dev_heal: Restore all health/stamina/mana" >> Adventure_Game_Release\mods\MOD_INSTALL.md
         
         # Create release-assets folder for the zip
         mkdir release-assets
