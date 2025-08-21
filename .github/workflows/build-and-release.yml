@@ -30,15 +30,54 @@ jobs:
         
     - name: Create release assets
       run: |
+        # Create the main game folder structure
+        mkdir Adventure_Game_Release
+        mkdir Adventure_Game_Release\mods
+        mkdir Adventure_Game_Release\saves
+        
+        # Copy the executable
+        copy dist\Adventure_Game.exe Adventure_Game_Release\
+        
+        # Copy essential files
+        copy README.md Adventure_Game_Release\
+        if (Test-Path "LICENSE") { copy LICENSE Adventure_Game_Release\ }
+        
+        # Copy mods folder contents (but not the folder itself)
+        if (Test-Path "mods\mods.json") { copy mods\mods.json Adventure_Game_Release\mods\ }
+        if (Test-Path "mods\README.md") { copy mods\README.md Adventure_Game_Release\mods\ }
+        
+        # Create a mods.json file if it doesn't exist
+        if (!(Test-Path "mods\mods.json")) {
+          echo '{"enabled_mods": []}' > Adventure_Game_Release\mods\mods.json
+        }
+        
+        # Create a simple installation guide in the main folder
+        echo "# Adventure Game Installation" > Adventure_Game_Release\INSTALL.md
+        echo "" >> Adventure_Game_Release\INSTALL.md
+        echo "1. Extract this folder anywhere on your computer" >> Adventure_Game_Release\INSTALL.md
+        echo "2. Run Adventure_Game.exe to play" >> Adventure_Game_Release\INSTALL.md
+        echo "3. Check the mods folder for modding instructions" >> Adventure_Game_Release\INSTALL.md
+        echo "4. Save games are stored in the saves folder" >> Adventure_Game_Release\INSTALL.md
+        
+        # Create a simple mod installation guide
+        echo "# Mod Installation Guide" > Adventure_Game_Release\mods\README.md
+        echo "" >> Adventure_Game_Release\mods\README.md
+        echo "To install mods:" >> Adventure_Game_Release\mods\README.md
+        echo "1. Download a mod folder" >> Adventure_Game_Release\mods\README.md
+        echo "2. Place it in this mods folder" >> Adventure_Game_Release\mods\README.md
+        echo "3. Edit mods.json to enable your mods" >> Adventure_Game_Release\mods\README.md
+        echo "4. Restart the game" >> Adventure_Game_Release\mods\README.md
+        
+        # Create release-assets folder for the zip
         mkdir release-assets
-        copy dist\Adventure_Game.exe release-assets\
-        copy README.md release-assets\
-        if (Test-Path "LICENSE") { copy LICENSE release-assets\ }
+        
+        # Create a ZIP file of the entire game folder
+        powershell -Command "Compress-Archive -Path 'Adventure_Game_Release' -DestinationPath 'release-assets\Adventure_Game_Release.zip' -Force"
         
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: release-assets/*
+        files: release-assets/Adventure_Game_Release.zip
         generate_release_notes: true
         draft: false
         prerelease: false

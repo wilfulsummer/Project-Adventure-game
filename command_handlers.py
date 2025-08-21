@@ -36,6 +36,21 @@ def handle_movement(command, current_room, player_floor, player_x, player_y, wor
                 elif command == "west": 
                     player_x -= 1
                     return True, player_x, player_y
+            elif "troll" in enemy["name"].lower():
+                print("The troll is strong but its very slow!")
+                print("You ran away successfully!")
+                if command == "north": 
+                    player_y += 1
+                    return True, player_x, player_y
+                elif command == "south": 
+                    player_y -= 1
+                    return True, player_x, player_y
+                elif command == "east": 
+                    player_x += 1
+                    return True, player_x, player_y
+                elif command == "west": 
+                    player_x -= 1
+                    return True, player_x, player_y
             else:
                 print(f"You can't leave! The {enemy['name']} blocks your way!")
                 return False, player_x, player_y
@@ -55,8 +70,13 @@ def handle_movement(command, current_room, player_floor, player_x, player_y, wor
     return False, player_x, player_y
 
 def handle_attack(current_room, inventory, player_mana, equipped_armor, player_hp, 
-                 discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells, using_fists=False):
+                 discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells, using_fists=False,
+                 attack_count=0, critical_hits=0, total_damage_dealt=0, total_damage_taken=0, 
+                 enemies_defeated=0, bosses_defeated=0, weapons_broken=0, armor_broken=0):
     """Handle attack command"""
+    # Increment attack count
+    attack_count += 1
+    
     if current_room.get("enemy"):
         enemies = current_room["enemy"]
         
@@ -121,7 +141,7 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
             if weapon_name == "Spell Book":
                 if not learned_spells:
                     print("You have a Spell Book but don't know any spells!")
-                    print("Buy spell scrolls from shops and use 'use_scroll' to learn them.")
+                    print("Buy spell scrolls from shops and use 'use' to learn them, or use waypoint scrolls to teleport.")
                     return True
                 
                 print("Which spell do you want to cast?")
@@ -164,6 +184,12 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                     print("Please enter a valid number.")
                     return True
             else:
+                # Check if weapon is broken - broken weapons cannot be used
+                if weapon.get("is_broken"):
+                    print(f"Your {weapon_name} is broken and cannot be used in combat!")
+                    print("You need to repair it at a shop first.")
+                    return True
+                
                 # Regular weapon attack
                 damage = weapon["damage"]
                 
@@ -177,23 +203,25 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                     else:
                         player_mana -= mana_cost
                 
-                # Check for critical hits
-                crit_chance = 0.05  # Base 5% crit chance
-                crit_multiplier = 2.0  # Base 2x damage
+                # Check for critical hits using weapon properties
+                crit_chance = weapon.get("crit_chance", 0.05)  # Use weapon's crit chance or default to 5%
+                crit_multiplier = weapon.get("crit_damage", 2.0)  # Use weapon's crit damage or default to 2x
                 
-                # Daggers get bonus crit chance and damage
+                # Apply weapon-specific bonuses on top of base properties
                 if weapon_name == "Dagger":
                     crit_chance += 0.15  # +15% chance (total 20%)
-                    crit_multiplier = 2.6  # 2.6x damage
+                    crit_multiplier = max(crit_multiplier, 2.6)  # At least 2.6x damage
                 
                 # Axes get bonus critical damage (heavier, more powerful hits)
                 elif weapon_name == "Axe":
-                    crit_multiplier = 2.8  # 2.8x damage (higher than base 2.0x)
+                    crit_multiplier = max(crit_multiplier, 2.8)  # At least 2.8x damage
                 
                 # Roll for critical hit
                 if random.random() < crit_chance:
                     original_damage = damage
                     damage = int(damage * crit_multiplier)
+                    critical_hits += 1
+                    
                     if weapon_name == "Dagger":
                         print(f"*** CRITICAL HIT! *** Your dagger strikes true! {original_damage} → {damage} damage!")
                     elif weapon_name == "Axe":
@@ -213,11 +241,13 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                     if weapon["durability"] <= 0:
                         print(f"Your {weapon['name']} breaks!")
                         inventory.pop(0)
+                        weapons_broken += 1
                 else:
                     print("Your weapon doesn't lose durability against the training dummy.")
         
         # Deal damage to target enemy
         target_enemy["hp"] -= damage
+        total_damage_dealt += damage
         
         # Check if target enemy is defeated
         if target_enemy["hp"] <= 0:
@@ -230,6 +260,11 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
             if target_enemy["name"] not in discovered_enemies:
                 discovered_enemies.add(target_enemy["name"])
                 print(f"{target_enemy['name']}'s File Unlocked!")
+            
+            # Track enemy defeat statistics
+            enemies_defeated += 1
+            if target_enemy.get("is_boss"):
+                bosses_defeated += 1
             
             # Boss drops mysterious key for current floor
             if target_enemy.get("is_boss"):
@@ -329,9 +364,11 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                         equipped_armor["durability"] -= 1
                         if equipped_armor["durability"] <= 0:
                             print(f"Your {equipped_armor['name']} breaks!")
+                            armor_broken += 1
                             equipped_armor = None
                     
                     player_hp -= enemy_damage
+                    total_damage_taken += enemy_damage
                     
                     # Show different messages for extra turns
                     if extra_turns > 1 and turn > 0:
@@ -380,10 +417,9 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
                 print("Your weapon inventory is full! Drop a weapon first.")
                 return True
             
-            # Check if weapon is broken
+            # Allow picking up broken weapons (they can be repaired but cannot be used)
             if item['durability'] <= 0:
-                print(f"You cannot pick up {item['name']} - it's broken!")
-                return True
+                print(f"You picked up the broken {item['name']}! (Broken weapons cannot be used but can be repaired)")
             
             inventory.append(item)
             current_room["weapons"].remove(item)
@@ -393,10 +429,9 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
                 print("Your armor inventory is full! Drop some armor first.")
                 return True
             
-            # Check if armor is broken
+            # Allow picking up broken armor (it can be repaired)
             if item['durability'] <= 0:
-                print(f"You cannot pick up {item['name']} - it's broken!")
-                return True
+                print(f"You picked up the broken {item['name']}! (Broken armor can be repaired)")
             
             armor_inventory.append(item)
             current_room["armors"].remove(item)
@@ -444,13 +479,14 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
             weapons_to_take = [item for item_type, item in available_items if item_type == "weapon"]
             for weapon in weapons_to_take:
                 if len(inventory) < MAX_WEAPONS:
-                    # Check if weapon is broken
+                    # Allow picking up broken weapons (they can be repaired but cannot be used)
                     if weapon['durability'] <= 0:
-                        print(f"You cannot pick up {weapon['name']} - it's broken!")
-                        items_skipped += 1
-                        continue
+                        print(f"You picked up the broken {weapon['name']}! (Broken weapons cannot be used but can be repaired)")
                     
                     inventory.append(weapon)
+                    current_room["weapons"].remove(weapon)
+                    print(f"You picked up the {weapon['name']}!")
+                    items_taken += 1
                     current_room["weapons"].remove(weapon)
                     print(f"You picked up the {weapon['name']}!")
                     items_taken += 1
@@ -461,13 +497,14 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
             armors_to_take = [item for item_type, item in available_items if item_type == "armor"]
             for armor in armors_to_take:
                 if len(armor_inventory) < MAX_ARMOR:
-                    # Check if armor is broken
+                    # Allow picking up broken armor (it can be repaired)
                     if armor['durability'] <= 0:
-                        print(f"You cannot pick up {armor['name']} - it's broken!")
-                        items_skipped += 1
-                        continue
+                        print(f"You picked up the broken {armor['name']}! (Broken armor can be repaired)")
                     
                     armor_inventory.append(armor)
+                    current_room["armors"].remove(armor)
+                    print(f"You picked up the {armor['name']}!")
+                    items_taken += 1
                     current_room["armors"].remove(armor)
                     print(f"You picked up the {armor['name']}!")
                     items_taken += 1
@@ -491,10 +528,9 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
                             print("Your weapon inventory is full! Drop a weapon first.")
                             return True
                         
-                        # Check if weapon is broken
+                        # Allow picking up broken weapons (they can be repaired but cannot be used)
                         if item['durability'] <= 0:
-                            print(f"You cannot pick up {item['name']} - it's broken!")
-                            return True
+                            print(f"You picked up the broken {item['name']}! (Broken weapons cannot be used but can be repaired)")
                         
                         inventory.append(item)
                         current_room["weapons"].remove(item)
@@ -504,10 +540,9 @@ def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR
                             print("Your armor inventory is full! Drop some armor first.")
                             return True
                         
-                        # Check if armor is broken
+                        # Allow picking up broken armor (it can be repaired)
                         if item['durability'] <= 0:
-                            print(f"You cannot pick up {item['name']} - it's broken!")
-                            return True
+                            print(f"You picked up the broken {item['name']}! (Broken armor can be repaired)")
                         
                         armor_inventory.append(item)
                         current_room["armors"].remove(item)
@@ -530,12 +565,18 @@ def handle_inventory(inventory, using_fists=False):
     if inventory:
         print("\nYour weapons:")
         for i, weapon in enumerate(inventory):
+            # Show broken status and enhanced stats
+            broken_tag = " [BROKEN - CANNOT USE]" if weapon.get("is_broken") else ""
+            crit_info = ""
+            if weapon.get("crit_chance") and weapon.get("crit_damage") and not weapon.get("is_broken"):
+                crit_info = f", Crit: {int(weapon['crit_chance']*100)}% ({weapon['crit_damage']}x)"
+            
             if weapon.get("name") == "Spell Book":
-                print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']})")
+                print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}){broken_tag}")
             elif weapon.get("requires_mana"):
-                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)})")
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)}){broken_tag}{crit_info}")
             else:
-                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']})")
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}){broken_tag}{crit_info}")
     
     # Show current weapon status
     if using_fists:
@@ -571,14 +612,20 @@ def handle_drop(inventory, armor_inventory, equipped_armor, current_room):
     
     # Show weapons
     if inventory:
-        print("\nWeapons:")
-        for i, weapon in enumerate(inventory):
-            if weapon.get("name") == "Spell Book":
-                print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']})")
-            elif weapon.get("requires_mana"):
-                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)})")
-            else:
-                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']})")
+            print("\nWeapons:")
+            for i, weapon in enumerate(inventory):
+                # Show broken status and enhanced stats
+                broken_tag = " [BROKEN - CANNOT USE]" if weapon.get("is_broken") else ""
+                crit_info = ""
+                if weapon.get("crit_chance") and weapon.get("crit_damage") and not weapon.get("is_broken"):
+                    crit_info = f", Crit: {int(weapon['crit_chance']*100)}% ({weapon['crit_damage']}x)"
+                
+                if weapon.get("name") == "Spell Book":
+                    print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}){broken_tag}")
+                elif weapon.get("requires_mana"):
+                    print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)}){broken_tag}{crit_info}")
+                else:
+                    print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}){broken_tag}{crit_info}")
     
     # Show armor
     if armor_inventory:
@@ -885,9 +932,22 @@ def handle_consume(current_room, player_max_hp, player_hp, player_stamina, playe
 def handle_run(current_room, player_stamina, player_x, player_y):
     """Handle run command"""
     if current_room.get("enemy"):
-        if player_stamina >= 10:
+        enemy = current_room["enemy"]
+        enemy_name = enemy["name"]
+        
+        # Special logic for baby dragons
+        if "baby dragon" in enemy_name.lower():
+            print("You ran away successfully!")
+            # Move to a random adjacent room without stamina cost
+            directions = ["north", "south", "east", "west"]
+            direction = random.choice(directions)
+            if direction == "north": player_y += 1
+            elif direction == "south": player_y -= 1
+            elif direction == "east": player_x += 1
+            elif direction == "west": player_x -= 1
+        elif player_stamina >= 10:
             player_stamina -= 10
-            print(f"You run away from the {current_room['enemy']['name']}!")
+            print(f"You run away from the {enemy_name}!")
             print(f"Stamina used: 10 (Remaining: {player_stamina})")
             # Move to a random adjacent room
             directions = ["north", "south", "east", "west"]
@@ -967,7 +1027,23 @@ def handle_repair(current_room, inventory, armor_inventory, player_money):
                     if confirm == 'y':
                         player_money -= total_cost
                         weapon["durability"] = max_durability
-                        print(f"Your {weapon['name']} has been repaired to full durability!")
+                        
+                        # If weapon was broken, restore normal stats
+                        if weapon.get("is_broken"):
+                            weapon["is_broken"] = False
+                            # Restore normal damage (remove 50% bonus)
+                            if weapon.get("damage") != "???":
+                                weapon["damage"] = int(weapon["damage"] / 1.5)
+                            # Restore normal crit stats
+                            weapon["crit_chance"] = 0.05
+                            weapon["crit_damage"] = 2.0
+                            # Restore normal mana cost for magic weapons
+                            if weapon.get("requires_mana"):
+                                weapon["mana_cost"] = max(10, weapon["damage"] + random.randint(-2, 2))
+                            print(f"Your {weapon['name']} has been repaired and restored to normal stats!")
+                        else:
+                            print(f"Your {weapon['name']} has been repaired to full durability!")
+                        
                         print(f"Gold remaining: {player_money}")
                     else:
                         print("Repair cancelled.")

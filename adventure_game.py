@@ -554,15 +554,15 @@ def create_room(floor, x, y):
   crystal_type = None
   if random.random() < 0.05:
     crystal_roll = random.random()
-    if crystal_roll < 0.04:  # 2% chance for dual crystals
+    if crystal_roll < 0.175:  # 17.5% chance for dual crystals
       if random.random() < 0.5:
         crystal_type = "life_stamina"  # Life + Stamina
       else:
         crystal_type = "life_mana"  # Life + Mana
-    elif crystal_roll < 0.06:  # 1% chance for triple crystals
+    elif crystal_roll < 0.22:  # 4.5% chance for triple crystals
       crystal_type = "all"  # All three crystals
     else:
-      # Single crystal (2% chance)
+      # Single crystal (78% chance within crystal rooms)
       crystal_choice = random.random()
       if crystal_choice < 0.33:
         crystal_type = "life"
@@ -604,7 +604,7 @@ def create_room(floor, x, y):
     "armors": armors,
     "shop": None,
     "chest": None,
-    "crystal_type": crystal_type,
+    "crystal_type": None,  # Crystals only spawn in special crystal rooms
     "mysterious_key": mysterious_key_item
   }
 
@@ -894,6 +894,25 @@ def load_game():
   has_viewed_mechanics = data.get("has_viewed_mechanics", False)
   using_fists = data.get("using_fists", False)
   materials_inventory = data.get("materials_inventory", {})
+  
+  # Handle newly added stats with sensible defaults
+  enemies_defeated = data.get("enemies_defeated", 0)
+  bosses_defeated = data.get("bosses_defeated", 0)
+  total_damage_dealt = data.get("total_damage_dealt", 0)
+  total_damage_taken = data.get("total_damage_taken", 0)
+  critical_hits = data.get("critical_hits", 0)
+  rooms_explored = data.get("rooms_explored", 0)
+  floors_visited = data.get("floors_visited", set())
+  items_collected = data.get("items_collected", 0)
+  weapons_broken = data.get("weapons_broken", 0)
+  armor_broken = data.get("armor_broken", 0)
+  gold_earned = data.get("gold_earned", 0)
+  
+  # Handle newly added leveling system
+  player_level = data.get("player_level", 1)
+  player_xp = data.get("player_xp", 0)
+  player_xp_to_next = data.get("player_xp_to_next", 100)
+  player_skill_points = data.get("player_skill_points", 0)
   
   print("Game loaded!")
   return True

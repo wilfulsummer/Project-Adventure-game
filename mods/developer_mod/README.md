@@ -55,7 +55,7 @@ Example: dev_weapon "Super Sword" 50 200
 Spawn enemies, weapons, armor, or items.
 ```
 Types: enemy, weapon, armor, item
-Example: dev_spawn enemy "Dragon"
+Example: dev_spawn enemy "Baby Dragon"
 ```
 
 #### `dev_info`

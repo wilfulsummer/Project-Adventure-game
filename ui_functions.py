@@ -195,17 +195,21 @@ def show_bestiary(discovered_enemies):
     """Display information about discovered enemies in the game"""
     print("\n=== BESTIARY ===")
     
-    if not discovered_enemies:
-        print("You have no enemy info!")
-        print("Defeat enemies to unlock their files in the bestiary.")
-        print("==================")
-        return
+    # Check if developer mode is enabled
+    developer_mode = False
+    try:
+        from mods.developer_mod.mod import is_developer_mode_enabled
+        developer_mode = is_developer_mode_enabled()
+    except ImportError:
+        pass
     
-    # Regular enemies
-    print("\n📖 Discovered Enemies:")
-    for enemy_name in discovered_enemies:
-        if enemy_name in enemy_stats:
-            base_hp = enemy_stats[enemy_name]
+    # If developer mode is enabled, show all enemies
+    if developer_mode:
+        print("🔧 DEVELOPER MODE: All enemies visible in bestiary")
+        print("\n📖 All Enemies in Game:")
+        
+        # Show all regular enemies from constants
+        for enemy_name, base_hp in enemy_stats.items():
             # Determine health category
             if base_hp <= 8:
                 health_desc = "Very Low Health"
@@ -229,10 +233,51 @@ def show_bestiary(discovered_enemies):
                 health_desc = "Very Low Health, Swarm Enemy"
             
             print(f"  🐺 {enemy_name}: {base_hp} HP - {health_desc}")
-        elif enemy_name == "Training Dummy":
-            print("  🎯 Training Dummy: ??? HP - Practice Target (No Rewards)")
-        elif enemy_name == "Troll":
-            print("  👹 Troll: ??? HP - Boss Enemy (Drops Mysterious Key)")
+        
+        # Show special enemies
+        print("  🎯 Training Dummy: ??? HP - Practice Target (No Rewards)")
+        print("  👹 Troll: ??? HP - Boss Enemy (Drops Mysterious Key)")
+        print("  🐉 Baby Dragon: ??? HP - Boss Enemy (Drops Mysterious Key + Dragon Scales)")
+        
+    else:
+        # Normal mode - only show discovered enemies
+        if not discovered_enemies:
+            print("You have no enemy info!")
+            print("Defeat enemies to unlock their files in the bestiary.")
+            print("==================")
+            return
+        
+        print("\n📖 Discovered Enemies:")
+        for enemy_name in discovered_enemies:
+            if enemy_name in enemy_stats:
+                base_hp = enemy_stats[enemy_name]
+                # Determine health category
+                if base_hp <= 8:
+                    health_desc = "Very Low Health"
+                elif base_hp <= 12:
+                    health_desc = "Low Health"
+                elif base_hp <= 16:
+                    health_desc = "Average Health"
+                elif base_hp <= 20:
+                    health_desc = "High Health"
+                else:
+                    health_desc = "Very High Health"
+                
+                # Special descriptions for specific enemies
+                if enemy_name == "Hungry Wolf":
+                    health_desc = "Low Health, High Attack"
+                elif enemy_name == "Rat":
+                    health_desc = "Very Low Health, Double Attacks"
+                elif enemy_name == "Orc":
+                    health_desc = "High Health, Tough Opponent"
+                elif enemy_name == "Spider":
+                    health_desc = "Very Low Health, Swarm Enemy"
+                
+                print(f"  🐺 {enemy_name}: {base_hp} HP - {health_desc}")
+            elif enemy_name == "Training Dummy":
+                print("  🎯 Training Dummy: ??? HP - Practice Target (No Rewards)")
+            elif enemy_name == "Troll":
+                print("  👹 Troll: ??? HP - Boss Enemy (Drops Mysterious Key)")
     
     # Combat tips
     print("\n💡 Combat Tips:")
@@ -243,6 +288,9 @@ def show_bestiary(discovered_enemies):
     print("  - Orcs: Tough opponents, use your best weapons")
     print("  - Rats: Attack twice per turn but deal reduced damage")
     print("  - Spiders: Attack in swarms of 2-4, very low damage")
+    
+    if developer_mode:
+        print("  - Baby Dragons: Floor 2 boss, tougher than Trolls but drop valuable scales")
     
     print("==================")
 
@@ -256,6 +304,31 @@ def show_help():
     print("  guide resources  - Potions, crystals, and resources")
     print("  guide progression - Keys, floors, and progression")
     print("  guide utility    - Map, waypoints, save/load")
+    
+    # Show mod guide sections automatically
+    try:
+        from mods.mod_loader import mod_loader
+        mod_guides = mod_loader.get_mod_guides()
+        for guide_id, guide_data in mod_guides.items():
+            mod_name = guide_id.split('.')[0]
+            guide_name = guide_data.get('name', 'unknown')
+            description = guide_data.get('description', 'Mod guide section')
+            
+            # Check if guide requires permission and if it's granted
+            requires_permission = guide_data.get('requires_permission', False)
+            if requires_permission:
+                if mod_name == "developer_mod":
+                    try:
+                        from mods.developer_mod.mod import is_developer_mode_enabled
+                        if not is_developer_mode_enabled():
+                            continue  # Skip this guide if permission not granted
+                    except ImportError:
+                        continue  # Skip if can't check permission
+            
+            print(f"  guide {guide_name:<10} - {description}")
+    except ImportError:
+        pass  # Mod system not available
+    
     print("  guide all        - Show all commands")
     print("==================")
 
@@ -301,7 +374,7 @@ def show_items_help():
     print("  switch - Switch between weapons (includes fists option)")
     print("  equip - Equip armor")
     print("  equipment - Show all weapons and armor")
-    print("  use_scroll - Learn spells from scrolls")
+    print("  use - Use spell scrolls, waypoint scrolls, or potions")
     print("  repair - Repair weapons and armor at shops")
     print("\nItem Tips:")
     print("  - Weapons and armor have durability that decreases with use")
@@ -388,7 +461,7 @@ def show_all_help():
     print("Movement:")
     print("  north/south/east/west, descend")
     print("Items:")
-    print("  take, drop, switch, equip, equipment, use_scroll, repair")
+    print("  take, drop, switch, equip, equipment, use, repair")
     print("Resources:")
     print("  consume")
     print("Progression:")
@@ -414,7 +487,7 @@ def show_developer_help():
     print("  dev_stats hp 100          - Set current HP to 100")
     print("  dev_stats max_hp 200      - Set maximum HP to 200")
     print("  dev_weapon 'Super Sword' 50 200 - Create weapon with 50 damage, 200 durability")
-    print("  dev_spawn enemy 'Dragon'  - Spawn a dragon enemy")
+    print("  dev_spawn enemy 'Baby Dragon'  - Spawn a baby dragon enemy")
     print("  dev_spawn weapon 'Laser'  - Spawn a laser weapon")
     print("\nAvailable Stats:")
     print("  hp, max_hp, stamina, max_stamina, mana, max_mana, money")

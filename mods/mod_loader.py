@@ -53,9 +53,29 @@ class ModLoader:
         print(f"Mod Loader initialized for: {self.game_root}")
         print(f"Instance ID: {self.instance_id}")
     
-    def load_mods(self):
+    def load_mods(self, force_reload=False):
         """Load all available mods"""
-        print("Loading mods...")
+        # Check if mods are already loaded to prevent double-loading
+        if self.loaded_mods and not force_reload:
+            print("Mods already loaded, skipping reload...")
+            return
+            
+        if force_reload:
+            print("Force reloading mods...")
+            self.loaded_mods.clear()
+            self.mod_data = {
+                'unique_items': {},
+                'enemies': {},
+                'weapons': {},
+                'armors': {},
+                'spells': {},
+                'commands': {},
+                'room_types': {},
+                'hooks': {},
+                'guides': {}
+            }
+        else:
+            print("Loading mods...")
         
         # Create mods directory if it doesn't exist
         if not os.path.exists(self.mods_directory):
@@ -82,6 +102,10 @@ class ModLoader:
             self.load_mod(mod_name)
         
         print(f"Loaded {len(self.loaded_mods)} mod(s)")
+    
+    def force_reload_mods(self):
+        """Force reload all mods (useful for development)"""
+        self.load_mods(force_reload=True)
     
     def load_mod(self, mod_name: str):
         """Load a specific mod"""

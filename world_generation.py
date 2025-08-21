@@ -22,6 +22,17 @@ def create_weapon(x, y):
     # Make staffs stronger but require mana
     if weapon_name == "Magic Staff":
         damage = base_damage + damage_bonus + random.randint(1, 3)  # +1 to +3 extra damage
+        if is_broken:
+            # Broken weapons get enhanced stats: +50% damage, +25% crit chance, +50% crit damage, -25% mana cost
+            damage = int(damage * 1.5)
+            crit_chance = 0.25  # 25% crit chance
+            crit_damage = 3.0   # 3x crit damage
+            mana_cost = max(5, int((damage + random.randint(-2, 2)) * 0.75))  # 25% less mana cost
+        else:
+            crit_chance = 0.05  # Base 5% crit chance
+            crit_damage = 2.0   # Base 2x crit damage
+            mana_cost = max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
+        
         durability = 0 if is_broken else (base_durability + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
         return {
             "name": weapon_name,
@@ -29,7 +40,10 @@ def create_weapon(x, y):
             "durability": durability,
             "max_durability": durability,
             "requires_mana": True,
-            "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
+            "mana_cost": mana_cost,
+            "is_broken": is_broken,
+            "crit_chance": crit_chance,
+            "crit_damage": crit_damage
         }
     elif weapon_name == "Spell Book":
         durability = 0 if is_broken else (random.randint(15, 25) + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
@@ -37,26 +51,52 @@ def create_weapon(x, y):
             "name": weapon_name,
             "damage": "???",
             "durability": durability,
-            "max_durability": durability
+            "max_durability": durability,
+            "is_broken": is_broken
         }
     elif weapon_name == "Sword":
         # Swords are versatile - good damage and durability for all situations
         # +2-4 base damage and +3-5 durability bonus
         damage = base_damage + damage_bonus + random.randint(2, 4)
+        if is_broken:
+            # Broken weapons get enhanced stats: +50% damage, +25% crit chance, +50% crit damage
+            damage = int(damage * 1.5)
+            crit_chance = 0.25  # 25% crit chance
+            crit_damage = 3.0   # 3x crit damage
+        else:
+            crit_chance = 0.05  # Base 5% crit chance
+            crit_damage = 2.0   # Base 2x crit damage
+        
         durability = 0 if is_broken else (base_durability + durability_bonus + random.randint(3, 5))
         return {
             "name": weapon_name,
             "damage": damage,
             "durability": durability,
-            "max_durability": durability
+            "max_durability": durability,
+            "is_broken": is_broken,
+            "crit_chance": crit_chance,
+            "crit_damage": crit_damage
         }
     else:
+        damage = base_damage + damage_bonus
+        if is_broken:
+            # Broken weapons get enhanced stats: +50% damage, +25% crit chance, +50% crit damage
+            damage = int(damage * 1.5)
+            crit_chance = 0.25  # 25% crit chance
+            crit_damage = 3.0   # 3x crit damage
+        else:
+            crit_chance = 0.05  # Base 5% crit chance
+            crit_damage = 2.0   # Base 2x crit damage
+        
         durability = 0 if is_broken else (base_durability + durability_bonus)
         return {
             "name": weapon_name,
-            "damage": base_damage + damage_bonus,
+            "damage": damage,
             "durability": durability,
-            "max_durability": durability
+            "max_durability": durability,
+            "is_broken": is_broken,
+            "crit_chance": crit_chance,
+            "crit_damage": crit_damage
         }
 
 def create_armor(x, y):
@@ -95,6 +135,17 @@ def create_chest_weapon(dist):
     # Make staffs stronger but require mana
     if weapon_name == "Magic Staff":
         damage = base_damage + damage_bonus + random.randint(1, 3)  # +1 to +3 extra damage
+        if is_broken:
+            # Broken weapons get enhanced stats: +50% damage, +25% crit chance, +50% crit damage, -25% mana cost
+            damage = int(damage * 1.5)
+            crit_chance = 0.25  # 25% crit chance
+            crit_damage = 3.0   # 3x crit damage
+            mana_cost = max(5, int((damage + random.randint(-2, 2)) * 0.75))  # 25% less mana cost
+        else:
+            crit_chance = 0.05  # Base 5% crit chance
+            crit_damage = 2.0   # Base 2x crit damage
+            mana_cost = max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
+        
         durability = 0 if is_broken else (base_durability + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
         return {
             "name": weapon_name,
@@ -102,7 +153,10 @@ def create_chest_weapon(dist):
             "durability": durability,
             "max_durability": durability,
             "requires_mana": True,
-            "mana_cost": max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
+            "mana_cost": mana_cost,
+            "is_broken": is_broken,
+            "crit_chance": crit_chance,
+            "crit_damage": crit_damage
         }
     elif weapon_name == "Spell Book":
         durability = 0 if is_broken else (random.randint(15, 25) + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
@@ -110,15 +164,29 @@ def create_chest_weapon(dist):
             "name": weapon_name,
             "damage": "???",
             "durability": durability,
-            "max_durability": durability
+            "max_durability": durability,
+            "is_broken": is_broken
         }
     else:
+        damage = base_damage + damage_bonus
+        if is_broken:
+            # Broken weapons get enhanced stats: +50% damage, +25% crit chance, +50% crit damage
+            damage = int(damage * 1.5)
+            crit_chance = 0.25  # 25% crit chance
+            crit_damage = 3.0   # 3x crit damage
+        else:
+            crit_chance = 0.05  # Base 5% crit chance
+            crit_damage = 2.0   # Base 2x crit damage
+        
         durability = 0 if is_broken else (base_durability + durability_bonus)
         return {
             "name": weapon_name,
-            "damage": base_damage + damage_bonus,
+            "damage": damage,
             "durability": durability,
-            "max_durability": durability
+            "max_durability": durability,
+            "is_broken": is_broken,
+            "crit_chance": crit_chance,
+            "crit_damage": crit_damage
         }
 
 def create_chest_armor(x, y):
@@ -157,6 +225,16 @@ def create_enemy(x, y, force_boss=None):
             "hp": base_hp + variation + scaled * random.randint(1, 2),
             "base_attack": 10 + scaled,
             "armor_pierce": 2 + scaled // 3,  # Bosses have more armor piercing, scales with distance from (0,0)
+            "is_boss": True
+        }
+    elif force_boss == "Baby Dragon":
+        base_hp = 75  # Slightly more HP than Troll
+        variation = random.randint(-5, 5)
+        return {
+            "name": "Baby Dragon",
+            "hp": base_hp + variation + scaled * random.randint(1, 3),  # Better scaling than Troll
+            "base_attack": int((12 + scaled) * 1.4),  # 1.4x damage multiplier
+            "armor_pierce": 3 + scaled // 2,  # More armor piercing than Troll
             "is_boss": True
         }
 
@@ -235,11 +313,19 @@ def create_room(floor, x, y, learned_spells):
 
     # Golden key door room (1 in 25)
     if random.randint(1, 25) == 1:
+        # Choose boss based on floor
+        if floor == 2:
+            boss_type = "Baby Dragon"
+            description = "You find a glowing golden door… and a Baby Dragon guarding it!"
+        else:
+            boss_type = "Troll"
+            description = "You find a glowing golden door… and the Troll guarding it!"
+        
         return {
-            "description": "You find a glowing golden door… and the Troll guarding it!",
+            "description": description,
             "type": "key_door",
             "key_required": True,
-            "enemy": create_enemy(x, y, force_boss="Troll"),
+            "enemy": create_enemy(x, y, force_boss=boss_type),
             "weapons": [],
             "armors": [],
             "shop": None,
@@ -301,22 +387,48 @@ def create_room(floor, x, y, learned_spells):
                     spell2 = random.choice([s for s in available_spells if s != spell1])
                     spell_scrolls_shop[spell2] = 1
         
+        # 35% chance for discount shop
+        is_discount_shop = random.random() < 0.35
+        discount_multiplier = 0.875 if is_discount_shop else 1.0  # 7.5-12.5% discount (average 10%)
+        
         shop = {
             "items": items,
-            "potion_price": random.randint(8, 15),
-            "stamina_potion_price": random.randint(6, 12),
-            "mana_potion_price": random.randint(15, 20),
+            "potion_price": int(random.randint(8, 15) * discount_multiplier),
+            "stamina_potion_price": int(random.randint(6, 12) * discount_multiplier),
+            "mana_potion_price": int(random.randint(15, 20) * discount_multiplier),
             "has_key": random.random() < 0.4,
             "armor": create_armor(x, y) if random.random() < 0.35 else None,
             "life_crystal": random.random() < 0.1,
-            "health_potions": random.randint(2, 4) if random.random() < 0.8 else 0,
+            "health_potions": random.randint(2, 4),  # Always have health potions
             "stamina_potions": random.randint(1, 2) if random.random() < 0.6 else 0,
             "mana_potions": random.randint(1, 2) if random.random() < 0.6 else 0,
             "waypoint_scrolls": random.randint(1, 2) if random.random() < 0.3 else 0,
-            "spell_scrolls": spell_scrolls_shop
+            "waypoint_scroll_price": int(random.randint(25, 35) * discount_multiplier),
+            "spell_scrolls": spell_scrolls_shop,
+            "is_discount_shop": is_discount_shop
         }
+        
+        # Apply discount to weapon costs
+        for item in shop["items"]:
+            item["cost"] = int(item["cost"] * discount_multiplier)
+        
+        # Apply discount to spell scroll prices and store calculated prices
+        if shop["spell_scrolls"]:
+            shop["spell_scroll_discount"] = discount_multiplier
+            # Calculate and store spell scroll prices to avoid random price changes
+            shop["spell_scroll_prices"] = {}
+            for spell_name in shop["spell_scrolls"].keys():
+                base_price = random.randint(40, 80)
+                if is_discount_shop:
+                    price = int(base_price * 0.7 * discount_multiplier)
+                else:
+                    price = int(base_price * 0.7)
+                shop["spell_scroll_prices"][spell_name] = price
+        
+        shop_description = "A cozy discount shop with items for sale at reduced prices!" if is_discount_shop else "A cozy shop with items for sale."
+        
         return {
-            "description": "A cozy shop with items for sale.",
+            "description": shop_description,
             "type": "shop",
             "shop": shop,
             "enemy": None,
@@ -330,15 +442,15 @@ def create_room(floor, x, y, learned_spells):
     crystal_type = None
     if random.random() < 0.05:
         crystal_roll = random.random()
-        if crystal_roll < 0.04:  # 2% chance for dual crystals
+        if crystal_roll < 0.175:  # 17.5% chance for dual crystals
             if random.random() < 0.5:
                 crystal_type = "life_stamina"  # Life + Stamina
             else:
                 crystal_type = "life_mana"  # Life + Mana
-        elif crystal_roll < 0.06:  # 1% chance for triple crystals
+        elif crystal_roll < 0.22:  # 4.5% chance for triple crystals
             crystal_type = "all"  # All three crystals
         else:
-            # Single crystal (2% chance)
+            # Single crystal (78% chance within crystal rooms)
             crystal_choice = random.random()
             if crystal_choice < 0.33:
                 crystal_type = "life"
@@ -379,7 +491,7 @@ def create_room(floor, x, y, learned_spells):
         "armors": armors,
         "shop": None,
         "chest": None,
-        "crystal_type": crystal_type,
+        "crystal_type": None,  # Crystals only spawn in special crystal rooms
         "mysterious_key": mysterious_key_item
     }
 

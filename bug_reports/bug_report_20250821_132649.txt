@@ -1,0 +1,52 @@
+=== ADVENTURE GAME BUG REPORT ===
+Generated: 2025-08-21 13:26:49
+
+ERROR DETAILS:
+Type: EOFError
+Value: EOF when reading a line
+Description: EOF when reading a line
+
+TRACEBACK:
+  File "C:\CursorGames\Adventure_game.py\main.py", line 1360, in <module>
+    main()
+    ~~~~^^
+  File "C:\CursorGames\Adventure_game.py\main.py", line 201, in main
+    command = input("\nWhat do you do? ").lower().strip()
+              ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+
+
+SYSTEM INFORMATION:
+Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+Platform: win32
+Executable: C:\Users\Owner\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\python.exe
+Working Directory: C:\CursorGames\Adventure_game.py
+
+GAME STATE (if available):
+{
+  "player_position": "Floor 1, (0, 0)",
+  "player_stats": {
+    "hp": 50,
+    "max_hp": 50,
+    "stamina": 20,
+    "mana": 20
+  },
+  "inventory_count": 0,
+  "armor_count": 0,
+  "current_command": "Unknown"
+}
+
+INSTRUCTIONS FOR PLAYER:
+1. This bug report has been saved to: bug_reports\bug_report_20250821_132649.txt
+2. Please describe what you were doing when this error occurred
+3. Include any relevant details about your game progress
+4. You can find this file in the 'bug_reports' folder
+5. Consider sharing this report with the game developers
+
+INSTRUCTIONS FOR DEVELOPER:
+1. Check the traceback above for the error location
+2. Review the game state to understand the context
+3. Test the specific scenario that caused this error
+4. Fix the issue and update the game
+
+Thank you for helping improve the game!
+===============================================

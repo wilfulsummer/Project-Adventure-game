@@ -2,6 +2,70 @@ import json
 import os
 import glob
 
+# Default values for save compatibility
+SAVE_DEFAULTS = {
+    # Core player stats
+    "player_hp": 50,
+    "player_max_hp": 50,
+    "player_stamina": 20,
+    "player_max_stamina": 20,
+    "player_mana": 20,
+    "player_max_mana": 20,
+    "player_money": 0,
+    "player_potions": 0,
+    "stamina_potions": 0,
+    "mana_potions": 0,
+    "waypoint_scrolls": 1,
+    "golden_keys": 0,
+    
+    # Leveling system
+    "player_level": 1,
+    "player_xp": 0,
+    "player_xp_to_next": 100,
+    "player_skill_points": 0,
+    
+    # Statistics tracking
+    "enemies_defeated": 0,
+    "bosses_defeated": 0,
+    "total_damage_dealt": 0,
+    "total_damage_taken": 0,
+    "critical_hits": 0,
+    "attack_count": 0,
+    "rooms_explored": 0,
+    "move_count": 0,
+    "items_collected": 0,
+    "weapons_broken": 0,
+    "armor_broken": 0,
+    "gold_earned": 0,
+    
+    # Collections and flags
+    "inventory": [],
+    "armor_inventory": [],
+    "equipped_armor": None,
+    "mysterious_keys": {},
+    "unlocked_floors": [],
+    "waypoints": {},
+    "discovered_enemies": [],
+    "learned_spells": [],
+    "spell_scrolls": {},
+    "using_fists": False,
+    "discovered_uniques": {},
+    "materials_inventory": {},
+    "floors_visited": [],
+    "has_viewed_mechanics": False
+}
+
+def get_save_field_with_default(data, field_name, default_value=None):
+    """Get a field from save data with fallback to defaults"""
+    if field_name in data:
+        return data[field_name]
+    
+    # Check if we have a default for this field
+    if default_value is None and field_name in SAVE_DEFAULTS:
+        return SAVE_DEFAULTS[field_name]
+    
+    return default_value
+
 # Directory for save files
 SAVE_DIR = "saves"
 DEFAULT_SAVE = "savegame.json"
@@ -59,8 +123,14 @@ def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, pla
     # Import unique items system to get discovered uniques
     from unique_items import discovered_uniques
     
-    # Handle floors_visited set conversion
+    # Handle floors_visited set conversion - ensure it's always a set before converting to list
     if floors_visited is None:
+        floors_visited = set()
+    elif isinstance(floors_visited, int):
+        # Convert old integer format to set
+        floors_visited = set([floors_visited]) if floors_visited > 0 else set()
+    elif not isinstance(floors_visited, (set, list)):
+        # Fallback for any other unexpected types
         floors_visited = set()
     
     data = {
@@ -102,10 +172,10 @@ def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, pla
         "mana_potions": mana_potions,
         "mysterious_keys": mysterious_keys,
         "golden_keys": golden_keys,
-        "unlocked_floors": list(unlocked_floors),
+        "unlocked_floors": list(unlocked_floors) if isinstance(unlocked_floors, set) else [],
         "waypoints": waypoints,
         "waypoint_scrolls": waypoint_scrolls,
-        "discovered_enemies": list(discovered_enemies),
+        "discovered_enemies": list(discovered_enemies) if isinstance(discovered_enemies, set) else [],
         "learned_spells": learned_spells,
         "spell_scrolls": spell_scrolls,
         "using_fists": using_fists,
@@ -147,12 +217,18 @@ def auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_fl
                    total_damage_dealt=0, total_damage_taken=0, critical_hits=0, attack_count=0, rooms_explored=0,
                    floors_visited=None, move_count=0, items_collected=0, weapons_broken=0, gold_earned=0):
     """Auto-save the game (overwrites previous auto-save)"""
+    
+    # Ensure set parameters are properly converted to lists for JSON serialization
+    unlocked_floors_list = list(unlocked_floors) if isinstance(unlocked_floors, set) else unlocked_floors
+    discovered_enemies_list = list(discovered_enemies) if isinstance(discovered_enemies, set) else discovered_enemies
+    floors_visited_list = list(floors_visited) if isinstance(floors_visited, set) else floors_visited
+    
     return save_game("auto_save", worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                      player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                      player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
-                     unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
+                     unlocked_floors_list, waypoints, waypoint_scrolls, discovered_enemies_list, learned_spells, spell_scrolls, using_fists,
                      player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated, total_damage_dealt,
-                     total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
+                     total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited_list, move_count,
                      items_collected, weapons_broken, gold_earned)
 
 def load_game(save_name=None):
@@ -232,32 +308,32 @@ def load_game(save_name=None):
     
     player_x = data["player_x"]
     player_y = data["player_y"]
-    inventory = data["inventory"]
-    armor_inventory = data["armor_inventory"]
-    equipped_armor = data["equipped_armor"]
-    player_hp = data["player_hp"]
-    player_max_hp = data["player_max_hp"]
-    player_stamina = data.get("player_stamina", 20)
-    player_max_stamina = data.get("player_max_stamina", 20)
-    player_mana = data.get("player_mana", 20)
-    player_max_mana = data.get("player_max_mana", 20)
-    player_money = data["player_money"]
-    player_potions = data["player_potions"]
-    stamina_potions = data.get("stamina_potions", 0)
-    mana_potions = data.get("mana_potions", 0)
-    waypoint_scrolls = data.get("waypoint_scrolls", 0)
+    inventory = get_save_field_with_default(data, "inventory")
+    armor_inventory = get_save_field_with_default(data, "armor_inventory")
+    equipped_armor = get_save_field_with_default(data, "equipped_armor")
+    player_hp = get_save_field_with_default(data, "player_hp")
+    player_max_hp = get_save_field_with_default(data, "player_max_hp")
+    player_stamina = get_save_field_with_default(data, "player_stamina")
+    player_max_stamina = get_save_field_with_default(data, "player_max_stamina")
+    player_mana = get_save_field_with_default(data, "player_mana")
+    player_max_mana = get_save_field_with_default(data, "player_max_mana")
+    player_money = get_save_field_with_default(data, "player_money")
+    player_potions = get_save_field_with_default(data, "player_potions")
+    stamina_potions = get_save_field_with_default(data, "stamina_potions")
+    mana_potions = get_save_field_with_default(data, "mana_potions")
+    waypoint_scrolls = get_save_field_with_default(data, "waypoint_scrolls")
     
     # Handle old mysterious_key format
     if "mysterious_key" in data and data["mysterious_key"]:
         mysterious_keys = {1: True}  # Old saves get Floor 1 key
     else:
-        mysterious_keys = data.get("mysterious_keys", {})
+        mysterious_keys = get_save_field_with_default(data, "mysterious_keys")
     
-    golden_keys = data.get("golden_keys", 0)
-    unlocked_floors = set(data.get("unlocked_floors", []))
+    golden_keys = get_save_field_with_default(data, "golden_keys")
+    unlocked_floors = set(get_save_field_with_default(data, "unlocked_floors"))
     
     # Handle old waypoint format
-    old_waypoints = data.get("waypoints", {})
+    old_waypoints = get_save_field_with_default(data, "waypoints")
     if old_waypoints and isinstance(next(iter(old_waypoints.values())), tuple) and len(next(iter(old_waypoints.values()))) == 2:
         # Convert old (x, y) format to new (floor, x, y) format
         waypoints = {}
@@ -266,13 +342,29 @@ def load_game(save_name=None):
     else:
         waypoints = old_waypoints
     
-    discovered_enemies = set(data.get("discovered_enemies", []))
-    learned_spells = data.get("learned_spells", [])
-    spell_scrolls = data.get("spell_scrolls", {})
-    using_fists = data.get("using_fists", False)
+    discovered_enemies = set(get_save_field_with_default(data, "discovered_enemies"))
+    
+    # Handle floors_visited conversion - ensure it's always a set
+    floors_visited_data = get_save_field_with_default(data, "floors_visited")
+    if isinstance(floors_visited_data, int):
+        floors_visited = set([floors_visited_data]) if floors_visited_data > 0 else set()
+    elif isinstance(floors_visited_data, list):
+        floors_visited = set(floors_visited_data)
+    else:
+        floors_visited = set()
+    learned_spells = get_save_field_with_default(data, "learned_spells")
+    spell_scrolls = get_save_field_with_default(data, "spell_scrolls")
+    using_fists = get_save_field_with_default(data, "using_fists")
     
     # Load unique items discovered
-    discovered_uniques = data.get("discovered_uniques", {})
+    discovered_uniques = get_save_field_with_default(data, "discovered_uniques")
+    
+    # Handle newly added stats with sensible defaults
+    attack_count = get_save_field_with_default(data, "attack_count")
+    move_count = get_save_field_with_default(data, "move_count")
+    has_viewed_mechanics = get_save_field_with_default(data, "has_viewed_mechanics")
+    materials_inventory = get_save_field_with_default(data, "materials_inventory")
+    armor_broken = get_save_field_with_default(data, "armor_broken")
     
     save_display_name = data.get("save_name", save_name)
     print(f"Game loaded from '{save_display_name}'!")
@@ -305,22 +397,22 @@ def load_game(save_name=None):
         "spell_scrolls": spell_scrolls,
         "using_fists": using_fists,
         "discovered_uniques": discovered_uniques,
-        "player_level": data.get("player_level", 1),
-        "player_xp": data.get("player_xp", 0),
-        "player_xp_to_next": data.get("player_xp_to_next", 100),
-        "player_skill_points": data.get("player_skill_points", 0),
-        "enemies_defeated": data.get("enemies_defeated", 0),
-        "bosses_defeated": data.get("bosses_defeated", 0),
-        "total_damage_dealt": data.get("total_damage_dealt", 0),
-        "total_damage_taken": data.get("total_damage_taken", 0),
-        "critical_hits": data.get("critical_hits", 0),
-        "attack_count": data.get("attack_count", 0),
-        "rooms_explored": data.get("rooms_explored", 0),
-        "floors_visited": data.get("floors_visited", []),
-        "move_count": data.get("move_count", 0),
-        "items_collected": data.get("items_collected", 0),
-        "weapons_broken": data.get("weapons_broken", 0),
-        "gold_earned": data.get("gold_earned", 0)
+        "player_level": get_save_field_with_default(data, "player_level"),
+        "player_xp": get_save_field_with_default(data, "player_xp"),
+        "player_xp_to_next": get_save_field_with_default(data, "player_xp_to_next"),
+        "player_skill_points": get_save_field_with_default(data, "player_skill_points"),
+        "enemies_defeated": get_save_field_with_default(data, "enemies_defeated"),
+        "bosses_defeated": get_save_field_with_default(data, "bosses_defeated"),
+        "total_damage_dealt": get_save_field_with_default(data, "total_damage_dealt"),
+        "total_damage_taken": get_save_field_with_default(data, "total_damage_taken"),
+        "critical_hits": get_save_field_with_default(data, "critical_hits"),
+        "attack_count": get_save_field_with_default(data, "attack_count"),
+        "rooms_explored": get_save_field_with_default(data, "rooms_explored"),
+        "floors_visited": get_save_field_with_default(data, "floors_visited"),
+        "move_count": get_save_field_with_default(data, "move_count"),
+        "items_collected": get_save_field_with_default(data, "items_collected"),
+        "weapons_broken": get_save_field_with_default(data, "weapons_broken"),
+        "gold_earned": get_save_field_with_default(data, "gold_earned")
     }
 
 def delete_save(save_name):

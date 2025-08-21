@@ -616,257 +616,16 @@ def main():
         
         # Combat commands
         elif command == "attack":
-            # Use the complete attack logic from adventure_game.py instead of incomplete command_handlers
-            attack_count = 0
-            critical_hits = 0
-            total_damage_dealt = 0
-            total_damage_taken = 0
-            armor_broken = 0
-
-            if current_room.get("enemy"):
-                enemy = current_room["enemy"]
-                
-                # Check if using fists first
-                if using_fists:
-                    # Use fists (4 damage, infinite durability) - buffed from 3 to 4
-                    damage = 4
-                    weapon_name = "fists"
-                    
-                    # Check for critical hits (fists can crit too!)
-                    crit_chance = 0.05  # Base 5% crit chance
-                    crit_multiplier = 2.0  # Base 2x damage
-                    
-                    # Roll for critical hit
-                    if random.random() < crit_chance:
-                        original_damage = damage
-                        damage = int(damage * crit_multiplier)
-                        print(f"*** CRITICAL HIT! *** Your fists strike true! {original_damage} → {damage} damage!")
-                    else:
-                        print(f"You attack the {enemy['name']} with your {weapon_name} for {damage} damage!")
-                elif not inventory:
-                    # Use fists if no weapons available (4 damage, infinite durability) - buffed from 3 to 4
-                    damage = 4
-                    weapon_name = "fists"
-                    
-                    # Check for critical hits (fists can crit too!)
-                    crit_chance = 0.05  # Base 5% crit chance
-                    crit_multiplier = 2.0  # Base 2x damage
-                    
-                    # Roll for critical hit
-                    if random.random() < crit_chance:
-                        original_damage = damage
-                        damage = int(damage * crit_multiplier)
-                        print(f"*** CRITICAL HIT! *** Your fists strike true! {original_damage} → {damage} damage!")
-                    else:
-                        print(f"You attack the {enemy['name']} with your {weapon_name} for {damage} damage!")
-                else:
-                    # Use the first weapon in inventory
-                    weapon = inventory[0]
-                    weapon_name = weapon["name"]
-                    
-                    # Special handling for Spell Book
-                    if weapon_name == "Spell Book":
-                        if not learned_spells:
-                            print("You have a Spell Book but don't know any spells!")
-                            print("Buy spell scrolls from shops and use 'use_scroll' to learn them.")
-                            continue
-                        
-                        print("Which spell do you want to cast?")
-                        for i, spell_name in enumerate(learned_spells, 1):
-                            spell = spells[spell_name]
-                            print(f"  {i}. {spell_name} - {spell['mana_cost']} mana: {spell['description']}")
-                        
-                        try:
-                            choice = int(input("Enter number: ")) - 1
-                            if 0 <= choice < len(learned_spells):
-                                spell_name = learned_spells[choice]
-                                spell = spells[spell_name]
-                                
-                                # Check mana
-                                if player_mana < spell["mana_cost"]:
-                                    print(f"You need {spell['mana_cost']} mana to cast {spell_name}, but you only have {player_mana} mana!")
-                                    continue
-                                
-                                # Cast spell
-                                player_mana -= spell["mana_cost"]
-                                damage = spell["damage"]
-                                
-                                print(f"You cast {spell_name} for {damage} damage! (Mana used: {spell['mana_cost']})")
-                                
-                                # Apply spell effects
-                                if spell.get("effect"):
-                                    if spell["effect"] in ["Burning", "Poisoned"]:
-                                        enemy[spell["effect"]] = {
-                                            "damage": spell["effect_damage"],
-                                            "duration": spell["effect_duration"]
-                                        }
-                                        print(f"The {enemy['name']} is {spell['effect']}!")
-                                    elif spell["effect"] == "Stunned":
-                                        enemy["Stunned"] = spell["effect_duration"]
-                                        print(f"The {enemy['name']} is Stunned!")
-                            else:
-                                print("Invalid choice.")
-                                continue
-                        except ValueError:
-                            print("Please enter a valid number.")
-                            continue
-                    else:
-                        # Regular weapon attack
-                        damage = weapon["damage"]
-                        
-                        # Check if weapon requires mana (staff)
-                        if weapon.get("requires_mana"):
-                            mana_cost = weapon.get("mana_cost", 10)
-                            if player_mana < mana_cost:
-                                print(f"You need {mana_cost} mana to use the {weapon_name}, but you only have {player_mana} mana!")
-                                print("You can't attack with this weapon.")
-                                continue
-                            else:
-                                player_mana -= mana_cost
-                        
-                        # Check for critical hits
-                        crit_chance = 0.05  # Base 5% crit chance
-                        crit_multiplier = 2.0  # Base 2x damage
-                        
-                        # Daggers get bonus crit chance and damage
-                        if weapon_name == "Dagger":
-                            crit_chance += 0.075  # +7.5% chance (total 12.5%)
-                            crit_multiplier = 2.6  # 2.6x damage
-                        
-                        # Axes get bonus critical damage (heavier, more powerful hits)
-                        elif weapon_name == "Axe":
-                            crit_multiplier = 2.8  # 2.8x damage (higher than base 2.0x)
-                        
-                        # Roll for critical hit
-                        if random.random() < crit_chance:
-                            original_damage = damage
-                            damage = int(damage * crit_multiplier)
-                            critical_hits += 1
-                            if weapon_name == "Dagger":
-                                print(f"*** CRITICAL HIT! *** Your dagger strikes true! {original_damage} → {damage} damage!")
-                            elif weapon_name == "Axe":
-                                print(f"*** CRITICAL HIT! *** Your axe delivers a devastating blow! {original_damage} → {damage} damage!")
-                            else:
-                                print(f"*** CRITICAL HIT! *** {original_damage} → {damage} damage!")
-                        else:
-                            # Normal attack message
-                            if weapon.get("requires_mana"):
-                                print(f"You attack the {enemy['name']} with your {weapon_name} for {damage} damage! (Mana used: {mana_cost})")
-                            else:
-                                print(f"You attack the {enemy['name']} with your {weapon_name} for {damage} damage!")
-                        
-                        # Reduce weapon durability (except for training dummy)
-                        if enemy.get("name") != "Training Dummy":
-                            weapon["durability"] -= 1
-                            if weapon["durability"] <= 0:
-                                print(f"Your {weapon_name} breaks!")
-                                inventory.remove(weapon)
-                                if not inventory:
-                                    using_fists = True
-                                    print("You're back to using your fists!")
-                
-                # Apply damage to enemy
-                enemy["hp"] -= damage
-                total_damage_dealt += damage
-                
-                # Check if enemy is defeated
-                if enemy["hp"] <= 0:
-                    print(f"You defeated the {enemy['name']}!")
-                    
-                    # XP reward for defeating enemies
-                    try:
-                        from leveling_system import calculate_xp_reward, add_xp_and_level_up
-                        
-                        # Calculate XP reward based on enemy location and type
-                        xp_gained = calculate_xp_reward(enemy["name"], player_x, player_y, player_floor)
-                        player_xp += xp_gained
-                        print(f"You gained {xp_gained} XP!")
-                        
-                        # Check for level up
-                        new_xp, new_level, new_hp, new_max_hp, levels_gained, new_xp_to_next, skill_points_gained = add_xp_and_level_up(
-                            player_xp, player_level, player_hp, player_max_hp
-                        )
-                        
-                        if levels_gained > 0:
-                            player_xp = new_xp
-                            player_level = new_level
-                            player_hp = new_hp
-                            player_max_hp = new_max_hp
-                            player_xp_to_next = new_xp_to_next
-                            player_skill_points += skill_points_gained
-                            
-                            print(f"🎉 LEVEL UP! You are now level {player_level}!")
-                            print(f"Health increased! HP: {player_hp}/{player_max_hp}")
-                            print(f"Skill points gained: +{skill_points_gained} (Total: {player_skill_points})")
-                            
-                            if player_level >= 100:
-                                print("🏆 MAXIMUM LEVEL REACHED! You are a legendary warrior!")
-                            else:
-                                print(f"XP to next level: {player_xp}/{player_xp_to_next}")
-                        else:
-                            # Update XP to next level
-                            player_xp_to_next = new_xp_to_next
-                            
-                    except ImportError:
-                        print("Leveling system not available.")
-                    
-                    # Gold reward for defeating enemies
-                    if enemy.get("is_boss"):
-                        gold_reward = random.randint(15, 25)
-                        player_money += gold_reward
-                        print(f"Boss defeated! You earned {gold_reward} gold!")
-                    else:
-                        gold_reward = random.randint(5, 15)
-                        player_money += gold_reward
-                        print(f"Enemy defeated! You earned {gold_reward} gold!")
-                    
-                    # Discover enemy for bestiary
-                    if enemy["name"] not in discovered_enemies:
-                        discovered_enemies.add(enemy["name"])
-                        print(f"New enemy discovered: {enemy['name']}!")
-                    
-                    # Remove enemy from room
-                    current_room["enemy"] = None
-                    continue
-                
-                # Enemy attack (unless stunned)
-                if enemy.get("Stunned"):
-                    print(f"The {enemy['name']} is stunned and can't attack!")
-                    enemy["Stunned"] -= 1
-                    if enemy["Stunned"] <= 0:
-                        del enemy["Stunned"]
-                else:
-                    enemy_damage = enemy["base_attack"]
-                    if equipped_armor:
-                        # Balanced flat damage reduction: defense divided by 2 (rounded down)
-                        # This makes armor more balanced and less overpowered
-                        damage_reduction = equipped_armor["defense"] // 2
-                        # Apply armor piercing: enemies can ignore some armor
-                        armor_pierce = enemy.get("armor_pierce", 0)
-                        effective_reduction = max(0, damage_reduction - armor_pierce)
-                        enemy_damage = max(1, enemy_damage - effective_reduction)
-                        # Reduce armor durability
-                        equipped_armor["durability"] -= 1
-                        if equipped_armor["durability"] <= 0:
-                            print(f"Your {equipped_armor['name']} breaks!")
-                            armor_broken += 1
-                            equipped_armor = None
-                    
-                    player_hp -= enemy_damage
-                    total_damage_taken += enemy_damage
-                    print(f"The {enemy['name']} attacks you for {enemy_damage} damage!")
-                    print(f"You have {player_hp} HP remaining.")
-                    
-                    if player_hp <= 0:
-                        print("You have been defeated!")
-                        if handle_player_death():
-                            # Player chose to restart, continue with fresh game
-                            continue
-                        else:
-                            # Player chose to exit
-                            return
-            else:
-                print("There's no enemy here to attack.")
+            # Use the proper handle_attack function that handles multiple enemies correctly
+            success = handle_attack(current_room, inventory, player_mana, equipped_armor, player_hp, 
+                                  discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells, using_fists,
+                                  attack_count, critical_hits, total_damage_dealt, total_damage_taken, 
+                                  enemies_defeated, bosses_defeated, weapons_broken, armor_broken)
+            
+            if not success:
+                # Player was defeated
+                handle_player_death()
+                break
         
         elif command == "run":
             player_stamina, player_x, player_y = handle_run(current_room, player_stamina, player_x, player_y)
@@ -919,28 +678,34 @@ def main():
                     print(f"  {i+1}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}) - {item['cost']} gold (1 left)")
                 if shop.get("armor"):
                     armor = shop["armor"]
-                    print(f"  R. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}) - 14 gold (1 left)")
+                    armor_price = 14 if not shop.get("is_discount_shop") else int(14 * shop.get("spell_scroll_discount", 1.0))
+                    print(f"  R. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}) - {armor_price} gold (1 left)")
                 print(f"  P. Health Potion - {shop.get('potion_price', 15)} gold ({shop.get('health_potions', 0)} left)")
                 if shop.get("stamina_potions", 0) > 0:
                     print(f"  S. Stamina Potion - {shop.get('stamina_potion_price', 15)} gold ({shop.get('stamina_potions', 0)} left)")
                 if shop.get("mana_potions", 0) > 0:
                     print(f"  M. Mana Potion - {shop.get('mana_potion_price', 15)} gold ({shop.get('mana_potions', 0)} left)")
                 if shop.get("golden_keys", 0) > 0:
-                    print(f"  K. Golden Key - 35 gold ({shop.get('golden_keys', 0)} left)")
+                    key_price = 35 if not shop.get("is_discount_shop") else int(35 * shop.get("spell_scroll_discount", 1.0))
+                    print(f"  K. Golden Key - {key_price} gold ({shop.get('golden_keys', 0)} left)")
                 if shop.get("life_crystal"):
-                    print("  L. Life Crystal - 21 gold (1 left)")
+                    crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
+                    print(f"  L. Life Crystal - {crystal_price} gold (1 left)")
                 if shop.get("stamina_crystal"):
-                    print("  T. Stamina Crystal - 21 gold (1 left)")
+                    crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
+                    print(f"  T. Stamina Crystal - {crystal_price} gold (1 left)")
                 if shop.get("mana_crystal"):
-                    print("  N. Mana Crystal - 21 gold (1 left)")
+                    crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
+                    print(f"  N. Mana Crystal - {crystal_price} gold (1 left)")
                 if shop.get("waypoint_scrolls", 0) > 0:
-                    print(f"  W. Waypoint Scroll - {shop.get('waypoint_scroll_price', 25)} gold ({shop.get('waypoint_scrolls', 0)} left)")
+                    waypoint_price = shop.get('waypoint_scroll_price', 25)
+                    print(f"  W. Waypoint Scroll - {waypoint_price} gold ({shop.get('waypoint_scrolls', 0)} left)")
                 
                 # Show spell scrolls
                 if shop.get("spell_scrolls"):
                     print("Spell Scrolls:")
                     for i, (spell_name, count) in enumerate(shop["spell_scrolls"].items()):
-                        price = int(random.randint(40, 80) * 0.7)  # 30% reduction
+                        price = shop.get("spell_scroll_prices", {}).get(spell_name, 40)
                         print(f"  {chr(65 + i)}. {spell_name} Scroll - {price} gold ({count} left)")
                 
                 choice = input("What would you like to buy? (or 'cancel'): ").strip()
@@ -975,9 +740,10 @@ def main():
                     else:
                         print("You don't have enough gold.")
                 elif choice.lower() == "k" and shop.get("golden_keys", 0) > 0:
-                    if player_money >= 35:  # 30% reduction from 50
+                    key_price = 35 if not shop.get("is_discount_shop") else int(35 * shop.get("spell_scroll_discount", 1.0))
+                    if player_money >= key_price:
                         if golden_keys < 3:
-                            player_money -= 35
+                            player_money -= key_price
                             golden_keys += 1
                             shop["golden_keys"] = shop.get("golden_keys", 0) - 1
                             print(f"You bought a golden key! (You now have {golden_keys})")
@@ -986,8 +752,9 @@ def main():
                     else:
                         print("You don't have enough gold.")
                 elif choice.lower() == "l" and shop.get("life_crystal"):
-                    if player_money >= 21:  # 30% reduction from 30
-                        player_money -= 21
+                    crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
+                    if player_money >= crystal_price:
+                        player_money -= crystal_price
                         player_max_hp += 10
                         player_hp = min(player_hp + 20, player_max_hp)
                         shop["life_crystal"] = False  # Remove the crystal from shop
@@ -995,8 +762,9 @@ def main():
                     else:
                         print("You don't have enough gold.")
                 elif choice.lower() == "t" and shop.get("stamina_crystal"):
-                    if player_money >= 21:  # Same price as life crystal
-                        player_money -= 21
+                    crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
+                    if player_money >= crystal_price:
+                        player_money -= crystal_price
                         player_max_stamina += 20
                         player_stamina = min(player_stamina + 40, player_max_stamina)
                         shop["stamina_crystal"] = False  # Remove the crystal from shop
@@ -1004,8 +772,9 @@ def main():
                     else:
                         print("You don't have enough gold.")
                 elif choice.lower() == "n" and shop.get("mana_crystal"):
-                    if player_money >= 21:  # Same price as life crystal
-                        player_money -= 21
+                    crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
+                    if player_money >= crystal_price:
+                        player_money -= crystal_price
                         player_max_mana += 20
                         player_mana = min(player_mana + 40, player_max_mana)
                         shop["mana_crystal"] = False  # Remove the crystal from shop
@@ -1013,17 +782,19 @@ def main():
                     else:
                         print("You don't have enough gold.")
                 elif choice.lower() == "w" and shop.get("waypoint_scrolls", 0) > 0:
-                    if player_money >= shop.get("waypoint_scroll_price", 25):
-                        player_money -= shop.get("waypoint_scroll_price", 25)
+                    waypoint_price = shop.get("waypoint_scroll_price", 25)
+                    if player_money >= waypoint_price:
+                        player_money -= waypoint_price
                         waypoint_scrolls += 1
                         shop["waypoint_scrolls"] = shop.get("waypoint_scrolls", 0) - 1
                         print("You bought a waypoint scroll!")
                     else:
                         print("You don't have enough gold.")
                 elif choice.lower() == "r" and shop.get("armor"):
-                    if player_money >= 14:
+                    armor_price = 14 if not shop.get("is_discount_shop") else int(14 * shop.get("spell_scroll_discount", 1.0))
+                    if player_money >= armor_price:
                         if len(armor_inventory) < MAX_ARMOR:
-                            player_money -= 14
+                            player_money -= armor_price
                             armor_inventory.append(shop["armor"])
                             shop["armor"] = None  # Remove armor from shop
                             print(f"You bought the {armor_inventory[-1]['name']}!")
@@ -1054,7 +825,7 @@ def main():
                         spell_name = list(shop["spell_scrolls"].keys())[scroll_index]
                         count = shop["spell_scrolls"][spell_name]
                         if count > 0:
-                            price = int(random.randint(40, 80) * 0.7)  # 30% reduction
+                            price = shop.get("spell_scroll_prices", {}).get(spell_name, 40)
                             if player_money >= price:
                                 player_money -= price
                                 if spell_name not in spell_scrolls:
@@ -1082,6 +853,373 @@ def main():
             success, new_player_money = handle_repair(current_room, inventory, armor_inventory, player_money)
             if success:
                 player_money = new_player_money
+        
+        # Descend command - go down stairwells to new floors
+        elif command == "descend":
+            if current_room.get("type") == "stairwell" and current_room.get("requires_mysterious_key"):
+                if player_floor in mysterious_keys or player_floor in unlocked_floors:
+                    # Use mysterious key if player has one for this floor
+                    if player_floor in mysterious_keys:
+                        del mysterious_keys[player_floor]
+                        unlocked_floors.add(player_floor)
+                        print(f"You use your mysterious key for Floor {player_floor} to unlock the stairwell!")
+                        print("The key dissolves into the lock, permanently unlocking this floor's stairwells.")
+                        
+                        # Remove any mysterious keys from this floor's rooms since they're no longer useful
+                        if player_floor in worlds:
+                            for room in worlds[player_floor].values():
+                                if room.get("mysterious_key"):
+                                    room["mysterious_key"] = None
+                    
+                    # Descend to next floor
+                    player_floor += 1
+                    player_x = 0
+                    player_y = 0
+                    print(f"You descend to Floor {player_floor}!")
+                else:
+                    print(f"You need a mysterious key for Floor {player_floor} to unlock this stairwell!")
+            else:
+                print("There's no stairwell here to descend.")
+        
+        # Use command - handle spell scrolls, waypoint scrolls, and potions
+        elif command == "use" or command == "use_scroll":
+            # Check what types of items the player has
+            has_spell_scrolls = bool(spell_scrolls)
+            has_waypoint_scrolls = waypoint_scrolls > 0
+            has_potions = player_potions > 0 or stamina_potions > 0 or mana_potions > 0
+            
+            if not has_spell_scrolls and not has_waypoint_scrolls and not has_potions:
+                print("You don't have any scrolls or potions to use.")
+                return
+            
+            print("What would you like to use?")
+            
+            if has_spell_scrolls:
+                print("  1. Spell Scroll - Learn a new spell")
+            
+            if has_waypoint_scrolls:
+                print(f"  2. Waypoint Scroll - Teleport to a waypoint ({waypoint_scrolls} available)")
+            
+            if has_potions:
+                print("  3. Potion - Use health, stamina, or mana potions")
+            
+            try:
+                choice = input("Enter your choice: ").strip()
+                
+                if choice == "1" and has_spell_scrolls:
+                    # Handle spell scrolls
+                    print("\nWhich spell scroll do you want to use?")
+                    for i, (spell_name, count) in enumerate(spell_scrolls.items(), 1):
+                        print(f"  {i}. {spell_name} Scroll ({count} available)")
+                    
+                    spell_choice = input("Enter spell number: ").strip()
+                    if spell_choice.isdigit():
+                        spell_choice_num = int(spell_choice) - 1
+                        spell_list = list(spell_scrolls.items())
+                        if 0 <= spell_choice_num < len(spell_list):
+                            spell_name, count = spell_list[spell_choice_num]
+                            if spell_name in learned_spells:
+                                print(f"You already know the {spell_name} spell!")
+                            else:
+                                learned_spells.append(spell_name)
+                                spell_scrolls[spell_name] -= 1
+                                if spell_scrolls[spell_name] <= 0:
+                                    del spell_scrolls[spell_name]
+                                print(f"You learned the {spell_name} spell!")
+                                print(f"Description: {spells[spell_name]['description']}")
+                        else:
+                            print("Invalid spell choice.")
+                    else:
+                        print("Please enter a valid number.")
+                
+                elif choice == "2" and has_waypoint_scrolls:
+                    # Handle waypoint scrolls
+                    if not waypoints:
+                        print("You don't have any waypoints set to teleport to!")
+                        print("Use 'waypoint add <name>' to create a waypoint first.")
+                    else:
+                        print("\nAvailable waypoints:")
+                        for i, (name, (floor, x, y)) in enumerate(waypoints.items(), 1):
+                            print(f"  {i}. {name}: Floor {floor} ({x}, {y})")
+                        
+                        waypoint_choice = input("Enter waypoint number to teleport to: ").strip()
+                        if waypoint_choice.isdigit():
+                            waypoint_choice_num = int(waypoint_choice) - 1
+                            waypoint_list = list(waypoints.items())
+                            if 0 <= waypoint_choice_num < len(waypoint_list):
+                                name, (floor, x, y) = waypoint_list[waypoint_choice_num]
+                                waypoint_scrolls -= 1
+                                player_floor = floor
+                                player_x = x
+                                player_y = y
+                                print(f"You use a waypoint scroll to teleport to '{name}'!")
+                                print(f"You are now at Floor {player_floor} ({player_x}, {player_y})")
+                                print(f"Waypoint scrolls remaining: {waypoint_scrolls}")
+                            else:
+                                print("Invalid waypoint choice.")
+                        else:
+                            print("Please enter a valid number.")
+                
+                elif choice == "3" and has_potions:
+                    # Handle potions
+                    available_potions = []
+                    if player_potions > 0:
+                        available_potions.append(("health", player_potions))
+                    if stamina_potions > 0:
+                        available_potions.append(("stamina", stamina_potions))
+                    if mana_potions > 0:
+                        available_potions.append(("mana", mana_potions))
+                    
+                    if len(available_potions) == 1:
+                        # Only one type of potion, use it automatically
+                        potion_type, count = available_potions[0]
+                        if potion_type == "health":
+                            heal_amount = 30
+                            old_hp = player_hp
+                            player_hp = min(player_hp + heal_amount, player_max_hp)
+                            player_potions -= 1
+                            actual_heal = player_hp - old_hp
+                            print(f"You use a health potion and recover {actual_heal} HP!")
+                            print(f"You now have {player_hp}/{player_max_hp} HP and {player_potions} health potions remaining.")
+                        elif potion_type == "stamina":
+                            old_stamina = player_stamina
+                            player_stamina = min(player_stamina + 10, player_max_stamina)
+                            stamina_potions -= 1
+                            actual_regen = player_stamina - old_stamina
+                            print(f"You use a stamina potion and recover {actual_regen} stamina!")
+                            print(f"You now have {player_stamina}/{player_max_stamina} stamina and {stamina_potions} stamina potions remaining.")
+                        else:  # mana
+                            old_mana = player_mana
+                            player_mana = min(player_mana + 15, player_max_mana)
+                            mana_potions -= 1
+                            actual_regen = player_mana - old_mana
+                            print(f"You use a mana potion and recover {actual_regen} mana!")
+                            print(f"You now have {player_mana}/{player_max_mana} mana and {mana_potions} mana potions remaining.")
+                    else:
+                        # Multiple potion types, let player choose
+                        print("Which potion do you want to use?")
+                        for i, (potion_type, count) in enumerate(available_potions, 1):
+                            if potion_type == "health":
+                                print(f"  {i}. Health Potion ({count} available)")
+                            elif potion_type == "stamina":
+                                print(f"  {i}. Stamina Potion ({count} available)")
+                            else:  # mana
+                                print(f"  {i}. Mana Potion ({count} available)")
+                        
+                        try:
+                            potion_choice = int(input("Enter number: ")) - 1
+                            if 0 <= potion_choice < len(available_potions):
+                                potion_type, count = available_potions[potion_choice]
+                                if potion_type == "health":
+                                    heal_amount = 30
+                                    old_hp = player_hp
+                                    player_hp = min(player_hp + heal_amount, player_max_hp)
+                                    player_potions -= 1
+                                    actual_heal = player_hp - old_hp
+                                    print(f"You use a health potion and recover {actual_heal} HP!")
+                                    print(f"You now have {player_hp}/{player_max_hp} HP and {player_potions} health potions remaining.")
+                                elif potion_type == "stamina":
+                                    old_stamina = player_stamina
+                                    player_stamina = min(player_stamina + 10, player_max_stamina)
+                                    stamina_potions -= 1
+                                    actual_regen = player_stamina - old_stamina
+                                    print(f"You use a stamina potion and recover {actual_regen} stamina!")
+                                    print(f"You now have {player_stamina}/{player_max_stamina} stamina and {stamina_potions} stamina potions remaining.")
+                                else:  # mana
+                                    old_mana = player_mana
+                                    player_mana = min(player_mana + 15, player_max_mana)
+                                    mana_potions -= 1
+                                    actual_regen = player_mana - old_mana
+                                    print(f"You use a mana potion and recover {actual_regen} mana!")
+                                    print(f"You now have {player_mana}/{player_max_mana} mana and {mana_potions} mana potions remaining.")
+                            else:
+                                print("Invalid choice.")
+                        except ValueError:
+                            print("Please enter a valid number.")
+                
+                else:
+                    print("Invalid choice. Please enter 1, 2, or 3.")
+                    
+            except Exception as e:
+                print(f"Error using item: {e}")
+        
+        # Take key command - pick up mysterious keys
+        elif command == "take_key":
+            if current_room.get("mysterious_key"):
+                key = current_room["mysterious_key"]
+                if player_floor in mysterious_keys or player_floor in unlocked_floors:
+                    print(f"You already have a mysterious key for Floor {player_floor} or this floor is already unlocked!")
+                    print("Maybe you should use it instead of picking up another one.")
+                else:
+                    mysterious_keys[player_floor] = True
+                    current_room["mysterious_key"] = None
+                    print(f"You picked up the {key['name']}!")
+            else:
+                print("There's no mysterious key here to take.")
+        
+        # Loot command - open treasure chambers with golden keys
+        elif command == "loot":
+            if current_room.get("type") == "key_door" and not current_room.get("enemy") and not current_room.get("treasure_looted"):
+                if golden_keys <= 0:
+                    print("You need a golden key to access the treasure chamber!")
+                    print("You can buy one from shops for 35 gold.")
+                else:
+                    # Boss room treasure rewards
+                    gold_reward = 60
+                    potion_reward = random.randint(2, 4)
+                    
+                    player_money += gold_reward
+                    player_potions += potion_reward
+                    
+                    print(f"You use your golden key to unlock the treasure chamber!")
+                    print(f"Found {gold_reward} gold!")
+                    print(f"Found {potion_reward} health potions!")
+                    
+                    # Add Troll Hide armor to treasure room
+                    if len(armor_inventory) < MAX_ARMOR:
+                        from world_generation import create_troll_hide_armor
+                        troll_hide = create_troll_hide_armor(player_x, player_y)
+                        armor_inventory.append(troll_hide)
+                        print(f"Found {troll_hide['name']} (Defense: {troll_hide['defense']}, Durability: {troll_hide['durability']})!")
+                    else:
+                        # Store Troll Hide in the room for later pickup
+                        from world_generation import create_troll_hide_armor
+                        troll_hide = create_troll_hide_armor(player_x, player_y)
+                        if "armors" not in current_room:
+                            current_room["armors"] = []
+                        current_room["armors"].append(troll_hide)
+                        print("Your armor inventory is full! The Troll Hide was left behind.")
+                        print("You can pick it up later by dropping some armor first.")
+                    
+                    if player_floor not in mysterious_keys:
+                        mysterious_keys[player_floor] = True
+                        print(f"Found a mysterious key for Floor {player_floor}!")
+                    else:
+                        print(f"Found a mysterious key for Floor {player_floor}, but you already have one!")
+                    
+                    golden_keys -= 1  # Golden key is consumed
+                    current_room["treasure_looted"] = True
+                    print("The treasure chamber has been emptied.")
+            else:
+                print("There's nothing to loot here.")
+        
+        # Open command - open chests
+        elif command == "open":
+            if current_room.get("chest"):
+                chest = current_room["chest"]
+                if chest.get("locked", False):
+                    if golden_keys <= 0:
+                        print("This chest is locked! You need a golden key to open it.")
+                        print("You can buy golden keys from shops for 35 gold.")
+                    else:
+                        golden_keys -= 1
+                        chest["locked"] = False
+                        print("You use a golden key to unlock the chest!")
+                        
+                        # Add weapons to room
+                        if chest.get("weapons"):
+                            if "weapons" not in current_room:
+                                current_room["weapons"] = []
+                            current_room["weapons"].extend(chest["weapons"])
+                            print(f"Found {len(chest['weapons'])} weapons in the chest!")
+                        
+                        # Add armor to room
+                        if chest.get("armor"):
+                            if "armors" not in current_room:
+                                current_room["armors"] = []
+                            current_room["armors"].append(chest["armor"])
+                            print(f"Found {chest['armor']['name']} in the chest!")
+                        
+                        # Add potions
+                        if chest.get("potions", 0) > 0:
+                            player_potions += chest["potions"]
+                            print(f"Found {chest['potions']} health potions in the chest!")
+                        
+                        # Add life crystal
+                        if chest.get("life_crystal", False):
+                            player_max_hp += 10
+                            player_hp = min(player_hp + 20, player_max_hp)
+                            print("Found a life crystal in the chest! +10 max HP, +20 current HP")
+                        
+                        # Mark chest as opened
+                        chest["opened"] = True
+                        print("The chest has been opened and looted.")
+                else:
+                    print("This chest is already unlocked. Use 'take' to collect the items.")
+            else:
+                print("There's no chest here to open.")
+        
+        # Waypoint command - manage waypoints
+        elif command.startswith("waypoint"):
+            command_parts = command.split()
+            if len(command_parts) == 1:
+                # Show waypoint help
+                print("Waypoint commands:")
+                print("  waypoint add <name> - Add a waypoint at current location")
+                print("  waypoint view - Show all waypoints")
+                print("  waypoint delete <name> - Delete a waypoint")
+                print("  waypoint teleport <name> - Teleport to a waypoint (costs 1 scroll)")
+            elif command_parts[1] == "add" and len(command_parts) == 3:
+                name = command_parts[2]
+                if len(waypoints) >= 10:
+                    print("You can only have 10 waypoints maximum!")
+                elif name in waypoints:
+                    print(f"A waypoint named '{name}' already exists!")
+                else:
+                    waypoints[name] = (player_floor, player_x, player_y)
+                    print(f"Waypoint '{name}' added at Floor {player_floor} ({player_x}, {player_y})")
+            elif command_parts[1] == "view":
+                if not waypoints:
+                    print("You don't have any waypoints set.")
+                else:
+                    print("Your waypoints:")
+                    for name, (floor, x, y) in waypoints.items():
+                        print(f"  {name}: Floor {floor} ({x}, {y})")
+            elif command_parts[1] == "delete" and len(command_parts) == 3:
+                name = command_parts[2]
+                if name in waypoints:
+                    del waypoints[name]
+                    print(f"Waypoint '{name}' deleted.")
+                else:
+                    print(f"No waypoint named '{name}' found.")
+            elif command_parts[1] == "teleport" and len(command_parts) == 3:
+                name = command_parts[2]
+                if name not in waypoints:
+                    print(f"No waypoint named '{name}' found.")
+                elif waypoint_scrolls <= 0:
+                    print("You need a waypoint scroll to teleport!")
+                else:
+                    floor, x, y = waypoints[name]
+                    waypoint_scrolls -= 1
+                    player_floor = floor
+                    player_x = x
+                    player_y = y
+                    print(f"You teleport to waypoint '{name}'!")
+                    print(f"You are now at Floor {player_floor} ({player_x}, {player_y})")
+                    print(f"Waypoint scrolls remaining: {waypoint_scrolls}")
+            else:
+                print("Invalid waypoint command. Use 'waypoint' for help.")
+        
+        # Drop mysterious key command
+        elif command == "drop_mysterious_key":
+            if player_floor in mysterious_keys:
+                confirm = input("Are you sure you want to drop your mysterious key? (yes/no): ").lower().strip()
+                if confirm == "yes":
+                    print("Maybe you should use it instead of dropping it...")
+                    confirm2 = input("Really drop it? (yes/no): ").lower().strip()
+                    if confirm2 == "yes":
+                        del mysterious_keys[player_floor]
+                        current_room["mysterious_key"] = {
+                            "floor": player_floor,
+                            "name": f"Mysterious Key (Floor {player_floor})"
+                        }
+                        print(f"You dropped your mysterious key for Floor {player_floor}.")
+                    else:
+                        print("You decide to keep your mysterious key.")
+                else:
+                    print("You decide to keep your mysterious key.")
+            else:
+                print("You don't have a mysterious key to drop.")
         
         # Add more command handlers here as needed
         else:
