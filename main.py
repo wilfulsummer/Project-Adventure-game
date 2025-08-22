@@ -882,31 +882,31 @@ def main():
                         continue
                     
                     print("\nYour weapons:")
-                                    for i, weapon in enumerate(inventory):
-                    max_durability = weapon.get("max_durability", weapon["durability"] + 5)  # Default: current + 5
-                    current_durability = weapon["durability"]
-                    if current_durability < max_durability:
-                        repair_cost = (max_durability - current_durability) * shop.get("repair_price", 10)
-                        print(f"  {i+1}. {weapon['name']} - Durability: {current_durability}/{max_durability} (Repair cost: {repair_cost} gold)")
-                    else:
-                        print(f"  {i+1}. {weapon['name']} - Durability: {current_durability}/{max_durability} (Fully repaired)")
-                
-                repair_choice = input("Which weapon would you like to repair? (or 'cancel'): ").strip()
+                    for i, weapon in enumerate(inventory):
+                        max_durability = weapon.get("max_durability", weapon["durability"] + 5)  # Default: current + 5
+                        current_durability = weapon["durability"]
+                        if current_durability < max_durability:
+                            repair_cost = (max_durability - current_durability) * shop.get("repair_price", 10)
+                            print(f"  {i+1}. {weapon['name']} - Durability: {current_durability}/{max_durability} (Repair cost: {repair_cost} gold)")
+                        else:
+                            print(f"  {i+1}. {weapon['name']} - Durability: {current_durability}/{max_durability} (Fully repaired)")
+                    
+                    repair_choice = input("Which weapon would you like to repair? (or 'cancel'): ").strip()
                     if repair_choice.lower() == "cancel":
                         continue
                     
                     try:
                         weapon_index = int(repair_choice) - 1
                         if 0 <= weapon_index < len(inventory):
-                                                    weapon = inventory[weapon_index]
-                        max_durability = weapon.get("max_durability", weapon["durability"] + 5)  # Default: current + 5
-                        current_durability = weapon["durability"]
-                        
-                        if current_durability >= max_durability:
-                            print("This weapon is already at full durability!")
-                            continue
-                        
-                        repair_cost = (max_durability - current_durability) * shop.get("repair_price", 10)
+                            weapon = inventory[weapon_index]
+                            max_durability = weapon.get("max_durability", weapon["durability"] + 5)  # Default: current + 5
+                            current_durability = weapon["durability"]
+                            
+                            if current_durability >= max_durability:
+                                print("This weapon is already at full durability!")
+                                continue
+                            
+                            repair_cost = (max_durability - current_durability) * shop.get("repair_price", 10)
                             if player_money >= repair_cost:
                                 player_money -= repair_cost
                                 repair_amount = max_durability - current_durability
