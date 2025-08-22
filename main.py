@@ -136,6 +136,15 @@ def main():
     mod_loader.load_mods()
     mod_loader.call_startup_hooks()
     
+    # Show mod status
+    if mod_loader.are_mods_available():
+        loaded_count = len(mod_loader.list_mods())
+        print(f"\n[Mods] {loaded_count} mod(s) loaded successfully!")
+        if loaded_count > 0:
+            print("[Mods] Type 'mods' to see mod information")
+    else:
+        print("\n[Mods] No mods folder found - mods will be available in compiled version")
+    
     print("\n=== ADVENTURE GAME ===")
     print("Welcome to the Adventure Game!")
     print("Type 'guide' to see available info on how to play!")
@@ -541,9 +550,20 @@ def main():
         
         elif command == "mods":
             from mods.mod_loader import mod_loader
+            print("\n=== MOD SYSTEM STATUS ===")
+            
+            # Show mod loader status
+            instance_info = mod_loader.get_instance_info()
+            print(f"Status: {mod_loader.get_mods_status()}")
+            print(f"Game Root: {instance_info['game_root']}")
+            print(f"Mods Directory: {instance_info['mods_directory']}")
+            print(f"Compiled: {'Yes' if instance_info['is_compiled'] else 'No'}")
+            print()
+            
+            # Show loaded mods
             loaded_mods = mod_loader.list_mods()
             if loaded_mods:
-                print("\n=== LOADED MODS ===")
+                print("=== LOADED MODS ===")
                 for mod_name in loaded_mods:
                     mod_info = mod_loader.get_mod_info(mod_name)
                     if mod_info:
@@ -554,6 +574,20 @@ def main():
                 print("===================")
             else:
                 print("No mods are currently loaded.")
+                
+                # Give helpful information based on status
+                if not mod_loader.are_mods_available():
+                    if instance_info['is_compiled']:
+                        print("Note: This is a compiled game but the mods folder is missing.")
+                        print("To enable mods, ensure the 'mods' folder is in the same directory as the .exe file.")
+                    else:
+                        print("Note: This is source code without a mods folder.")
+                        print("Mods will be available when you run the compiled game.")
+                else:
+                    print("Note: Mods folder found but no mods are loaded.")
+                    print("Check mods.json to see which mods are enabled.")
+            
+            print("==========================")
         
         # Handle mod commands
         elif command.startswith("dev_"):
@@ -637,6 +671,38 @@ def main():
         elif command == "equipment":
             handle_equipment(inventory, armor_inventory, equipped_armor, using_fists)
         
+        elif command == "repair_status":
+            # Show repair status of weapons
+            if not inventory:
+                print("You don't have any weapons to repair.")
+            else:
+                print("\nWeapon Repair Status:")
+                total_repair_cost = 0
+                for i, weapon in enumerate(inventory):
+                    max_durability = weapon.get("max_durability", weapon["durability"] + 5)  # Default: current + 5
+                    current_durability = weapon["durability"]
+                    if current_durability < max_durability:
+                        repair_cost = (max_durability - current_durability) * 1  # Blacksmith base repair cost
+                        total_repair_cost += repair_cost
+                        print(f"  {i+1}. {weapon['name']} - Durability: {current_durability}/{max_durability} (Repair cost: {repair_cost} gold)")
+                    else:
+                        print(f"  {i+1}. {weapon['name']} - Durability: {current_durability}/{max_durability} (Fully repaired)")
+                
+                if total_repair_cost > 0:
+                    print(f"\nTotal repair cost for all weapons: {total_repair_cost} gold")
+                    print("Visit a blacksmith shop to repair your weapons!")
+                    print("Blacksmith shops offer better repair prices and bonus durability!")
+                else:
+                    print("\nAll weapons are in perfect condition!")
+                
+                # Show upgrade opportunities
+                print("\nUpgrade Opportunities:")
+                for i, weapon in enumerate(inventory):
+                    max_durability = weapon.get("max_durability", weapon["durability"] + 5)
+                    upgrade_cost = 2  # 2 gold per +1
+                    print(f"  {i+1}. {weapon['name']} - Upgrade max durability (+1) for {upgrade_cost} gold")
+                print("Visit a blacksmith shop to upgrade your weapons!")
+        
         elif command == "drop":
             handle_drop(inventory, armor_inventory, equipped_armor, current_room)
         
@@ -700,6 +766,13 @@ def main():
                 if shop.get("waypoint_scrolls", 0) > 0:
                     waypoint_price = shop.get('waypoint_scroll_price', 25)
                     print(f"  W. Waypoint Scroll - {waypoint_price} gold ({shop.get('waypoint_scrolls', 0)} left)")
+                
+                # Show repair option for blacksmith shops
+                if shop.get("is_blacksmith"):
+                    repair_price = shop.get("repair_price", 10)
+                    repair_bonus = shop.get("repair_bonus", 1)
+                    print(f"  B. Weapon Repair - {repair_price} gold per durability point (+{repair_bonus} bonus)")
+                    print(f"  U. Upgrade Max Durability - 2 gold per +1 max durability")
                 
                 # Show spell scrolls
                 if shop.get("spell_scrolls"):
@@ -802,6 +875,97 @@ def main():
                             print("Your armor inventory is full! Drop some armor first.")
                     else:
                         print("You don't have enough gold.")
+                elif choice.lower() == "b" and shop.get("is_blacksmith"):
+                    # Handle weapon repair
+                    if not inventory:
+                        print("You don't have any weapons to repair!")
+                        continue
+                    
+                    print("\nYour weapons:")
+                                    for i, weapon in enumerate(inventory):
+                    max_durability = weapon.get("max_durability", weapon["durability"] + 5)  # Default: current + 5
+                    current_durability = weapon["durability"]
+                    if current_durability < max_durability:
+                        repair_cost = (max_durability - current_durability) * shop.get("repair_price", 10)
+                        print(f"  {i+1}. {weapon['name']} - Durability: {current_durability}/{max_durability} (Repair cost: {repair_cost} gold)")
+                    else:
+                        print(f"  {i+1}. {weapon['name']} - Durability: {current_durability}/{max_durability} (Fully repaired)")
+                
+                repair_choice = input("Which weapon would you like to repair? (or 'cancel'): ").strip()
+                    if repair_choice.lower() == "cancel":
+                        continue
+                    
+                    try:
+                        weapon_index = int(repair_choice) - 1
+                        if 0 <= weapon_index < len(inventory):
+                                                    weapon = inventory[weapon_index]
+                        max_durability = weapon.get("max_durability", weapon["durability"] + 5)  # Default: current + 5
+                        current_durability = weapon["durability"]
+                        
+                        if current_durability >= max_durability:
+                            print("This weapon is already at full durability!")
+                            continue
+                        
+                        repair_cost = (max_durability - current_durability) * shop.get("repair_price", 10)
+                            if player_money >= repair_cost:
+                                player_money -= repair_cost
+                                repair_amount = max_durability - current_durability
+                                bonus_repair = shop.get("repair_bonus", 1)
+                                weapon["durability"] = min(max_durability + bonus_repair, max_durability + 5)  # Cap bonus at +5
+                                
+                                print(f"You repaired {weapon['name']} for {repair_cost} gold!")
+                                print(f"Durability restored to {weapon['durability']}/{max_durability} (+{bonus_repair} bonus)")
+                            else:
+                                print(f"You don't have enough gold. You need {repair_cost} gold.")
+                        else:
+                            print("Invalid weapon selection.")
+                    except ValueError:
+                        print("Please enter a valid number.")
+                elif choice.lower() == "u" and shop.get("is_blacksmith"):
+                    # Handle max durability upgrade
+                    if not inventory:
+                        print("You don't have any weapons to upgrade!")
+                        continue
+                    
+                    print("\nYour weapons:")
+                    for i, weapon in enumerate(inventory):
+                        max_durability = weapon.get("max_durability", weapon["durability"] + 5)
+                        current_durability = weapon["durability"]
+                        print(f"  {i+1}. {weapon['name']} - Durability: {current_durability}/{max_durability}")
+                    
+                    upgrade_choice = input("Which weapon would you like to upgrade? (or 'cancel'): ").strip()
+                    if upgrade_choice.lower() == "cancel":
+                        continue
+                    
+                    try:
+                        weapon_index = int(upgrade_choice) - 1
+                        if 0 <= weapon_index < len(inventory):
+                            weapon = inventory[weapon_index]
+                            current_max = weapon.get("max_durability", weapon["durability"] + 5)
+                            
+                            upgrade_amount = input("How many +1 max durability upgrades? (1-5, or 'cancel'): ").strip()
+                            if upgrade_amount.lower() == "cancel":
+                                continue
+                            
+                            try:
+                                amount = int(upgrade_amount)
+                                if 1 <= amount <= 5:
+                                    upgrade_cost = amount * 2  # 2 gold per +1
+                                    if player_money >= upgrade_cost:
+                                        player_money -= upgrade_cost
+                                        weapon["max_durability"] = current_max + amount
+                                        print(f"You upgraded {weapon['name']} for {upgrade_cost} gold!")
+                                        print(f"Max durability increased from {current_max} to {weapon['max_durability']}")
+                                    else:
+                                        print(f"You don't have enough gold. You need {upgrade_cost} gold.")
+                                else:
+                                    print("Please enter a number between 1 and 5.")
+                            except ValueError:
+                                print("Please enter a valid number.")
+                        else:
+                            print("Invalid weapon selection.")
+                    except ValueError:
+                        print("Please enter a valid number.")
                 elif choice.isdigit():
                     choice_num = int(choice) - 1
                     if 0 <= choice_num < len(shop.get("items", [])):

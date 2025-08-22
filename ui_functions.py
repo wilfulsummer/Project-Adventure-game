@@ -187,7 +187,11 @@ def show_room(current_room, player_floor, player_x, player_y, inventory, player_
             print(f"A {key['name']} lies here. Use 'take' to pick it up.")
 
     if current_room.get("shop"):
-        print("This is a shop. Type 'buy' to see what's for sale.")
+        shop = current_room["shop"]
+    if shop.get("is_blacksmith"):
+      print("This is a blacksmith's forge. Type 'buy' to see what's for sale and repair services.")
+    else:
+      print("This is a shop. Type 'buy' to see what's for sale.")
 
     print("\nType 'guide' to see a list of commands.")
 
@@ -376,6 +380,7 @@ def show_items_help():
     print("  equipment - Show all weapons and armor")
     print("  use - Use spell scrolls, waypoint scrolls, or potions")
     print("  repair - Repair weapons and armor at shops")
+    print("  repair_status - Show repair status and costs for all weapons")
     print("\nItem Tips:")
     print("  - Weapons and armor have durability that decreases with use")
     print("  - Items and enemies scale with distance from (0,0) but cap at 100 rooms away")
@@ -413,6 +418,7 @@ def show_progression_help():
     print("  loot - Loot treasure chambers")
     print("  buy - Buy from a shop")
     print("  repair - Repair weapons and armor at shops")
+    print("  repair_status - Show repair status and costs for all weapons")
     print("\nProgression Tips:")
     print("  - Mysterious keys are floor-specific and unlock stairwells permanently")
     print("  - Bosses drop mysterious keys for their specific floor")
@@ -421,6 +427,9 @@ def show_progression_help():
     print("  - Treasure chambers contain gold, potions, and mysterious keys")
     print("  - Stairwell rooms (1 in 25) require mysterious keys to descend")
     print("  - Repair costs scale with item power (damage/defense)")
+    print("  - Blacksmith shops (30% chance) offer better repair prices and bonus durability!")
+    print("  - Blacksmith shops can upgrade max durability (+1 for 2 gold)")
+    print("  - Use 'repair_status' to see repair costs for all weapons")
     print("==================")
 
 def show_utility_help():
@@ -461,7 +470,7 @@ def show_all_help():
     print("Movement:")
     print("  north/south/east/west, descend")
     print("Items:")
-    print("  take, drop, switch, equip, equipment, use, repair")
+    print("  take, drop, switch, equip, equipment, use, repair, repair_status")
     print("Resources:")
     print("  consume")
     print("Progression:")

@@ -571,12 +571,13 @@ def handle_inventory(inventory, using_fists=False):
             if weapon.get("crit_chance") and weapon.get("crit_damage") and not weapon.get("is_broken"):
                 crit_info = f", Crit: {int(weapon['crit_chance']*100)}% ({weapon['crit_damage']}x)"
             
+            max_durability = weapon.get("max_durability", weapon["durability"])
             if weapon.get("name") == "Spell Book":
-                print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}){broken_tag}")
+                print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}/{max_durability}){broken_tag}")
             elif weapon.get("requires_mana"):
-                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)}){broken_tag}{crit_info}")
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability}, Mana Cost: {weapon.get('mana_cost', 10)}){broken_tag}{crit_info}")
             else:
-                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}){broken_tag}{crit_info}")
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability}){broken_tag}{crit_info}")
     
     # Show current weapon status
     if using_fists:
@@ -620,12 +621,13 @@ def handle_drop(inventory, armor_inventory, equipped_armor, current_room):
                 if weapon.get("crit_chance") and weapon.get("crit_damage") and not weapon.get("is_broken"):
                     crit_info = f", Crit: {int(weapon['crit_chance']*100)}% ({weapon['crit_damage']}x)"
                 
+                max_durability = weapon.get("max_durability", weapon["durability"])
                 if weapon.get("name") == "Spell Book":
-                    print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}){broken_tag}")
+                    print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}/{max_durability}){broken_tag}")
                 elif weapon.get("requires_mana"):
-                    print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)}){broken_tag}{crit_info}")
+                    print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability}, Mana Cost: {weapon.get('mana_cost', 10)}){broken_tag}{crit_info}")
                 else:
-                    print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}){broken_tag}{crit_info}")
+                    print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability}){broken_tag}{crit_info}")
     
     # Show armor
     if armor_inventory:
@@ -997,14 +999,26 @@ def handle_repair(current_room, inventory, armor_inventory, player_money):
                 if 0 <= weapon_choice < len(inventory):
                     weapon = inventory[weapon_choice]
                     
-                    # Calculate repair cost based on weapon power
-                    if weapon.get("name") == "Spell Book":
-                        # Spell books have high base cost due to their utility
-                        base_cost = 3
+                    # Check if this is a blacksmith shop for special pricing
+                    shop = current_room.get("shop", {})
+                    is_blacksmith = shop.get("is_blacksmith", False)
+                    
+                    if is_blacksmith:
+                        # Blacksmith pricing: fixed cost per durability point + bonus
+                        base_cost = shop.get("repair_price", 10)  # Cost per durability point
+                        repair_bonus = shop.get("repair_bonus", 1)  # Extra durability restored
+                        print(f"[BLACKSMITH] Special pricing: {base_cost} gold per durability point (+{repair_bonus} bonus durability)")
                     else:
-                        # Calculate cost based on damage
-                        damage = weapon.get("damage", 5)
-                        base_cost = max(1, damage // 4)  # 1 gold per 4 damage, minimum 1
+                        # Regular shop pricing: cost based on weapon power
+                        if weapon.get("name") == "Spell Book":
+                            # Spell books have high base cost due to their utility
+                            base_cost = 3
+                        else:
+                            # Calculate cost based on damage
+                            damage = weapon.get("damage", 5)
+                            base_cost = max(1, damage // 4)  # 1 gold per 4 damage, minimum 1
+                        repair_bonus = 0
+                        print(f"[REGULAR SHOP] Standard pricing: {base_cost} gold per durability point")
                     
                     # Calculate how much durability needs to be restored
                     max_durability = weapon.get("max_durability", weapon["durability"] + 5)  # Use actual max durability
@@ -1018,6 +1032,8 @@ def handle_repair(current_room, inventory, armor_inventory, player_money):
                     
                     print(f"Repairing {weapon['name']} will cost {total_cost} gold ({base_cost} gold per durability point).")
                     print(f"Current durability: {weapon['durability']}, Max durability: {max_durability}")
+                    if repair_bonus > 0:
+                        print(f"Blacksmith bonus: +{repair_bonus} durability (final durability: {min(max_durability + repair_bonus, max_durability + 5)})")
                     
                     if player_money < total_cost:
                         print(f"You need {total_cost} gold, but you only have {player_money} gold.")
@@ -1026,7 +1042,13 @@ def handle_repair(current_room, inventory, armor_inventory, player_money):
                     confirm = input("Proceed with repair? (y/n): ").lower()
                     if confirm == 'y':
                         player_money -= total_cost
-                        weapon["durability"] = max_durability
+                        
+                        # Apply blacksmith bonus if available
+                        if repair_bonus > 0:
+                            weapon["durability"] = min(max_durability + repair_bonus, max_durability + 5)  # Cap bonus at +5
+                            print(f"[BLACKSMITH BONUS] +{repair_bonus} durability applied!")
+                        else:
+                            weapon["durability"] = max_durability
                         
                         # If weapon was broken, restore normal stats
                         if weapon.get("is_broken"):
@@ -1042,7 +1064,10 @@ def handle_repair(current_room, inventory, armor_inventory, player_money):
                                 weapon["mana_cost"] = max(10, weapon["damage"] + random.randint(-2, 2))
                             print(f"Your {weapon['name']} has been repaired and restored to normal stats!")
                         else:
-                            print(f"Your {weapon['name']} has been repaired to full durability!")
+                            if repair_bonus > 0:
+                                print(f"Your {weapon['name']} has been repaired to {weapon['durability']}/{max_durability} durability (+{repair_bonus} bonus)!")
+                            else:
+                                print(f"Your {weapon['name']} has been repaired to full durability!")
                         
                         print(f"Gold remaining: {player_money}")
                     else:

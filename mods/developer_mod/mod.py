@@ -314,6 +314,35 @@ def handle_dev_disable(args):
     print("Developer commands are no longer available.")
     return True
 
+def handle_dev_reload(args):
+    """Reload a specific mod"""
+    if not is_developer_mode_enabled():
+        print("Developer mode is not enabled.")
+        return False
+    
+    if len(args) < 1:
+        print("Usage: dev_reload <mod_name>")
+        print("Example: dev_reload example_mod")
+        return False
+    
+    mod_name = args[0]
+    
+    # Import mod loader and reload the mod
+    from mods.mod_loader import mod_loader
+    mod_loader.reload_specific_mod(mod_name)
+    return True
+
+def handle_dev_auto_reload(args):
+    """Auto-reload all changed mods"""
+    if not is_developer_mode_enabled():
+        print("Developer mode is not enabled.")
+        return False
+    
+    # Import mod loader and auto-reload changed mods
+    from mods.mod_loader import mod_loader
+    mod_loader.auto_reload_changed_mods()
+    return True
+
 # Register commands
 commands = {
     "dev_teleport": {
@@ -345,6 +374,16 @@ commands = {
         "name": "dev_disable",
         "description": "Disable developer mode (Developer only)",
         "function": "handle_dev_disable"
+    },
+    "dev_reload": {
+        "name": "dev_reload",
+        "description": "Reload a specific mod (Developer only)",
+        "function": "handle_dev_reload"
+    },
+    "dev_auto_reload": {
+        "name": "dev_auto_reload",
+        "description": "Auto-reload all changed mods (Developer only)",
+        "function": "handle_dev_auto_reload"
     }
 }
 
@@ -434,5 +473,7 @@ admin_commands = {
     "dev_weapon": handle_dev_weapon,
     "dev_spawn": handle_dev_spawn,
     "dev_info": handle_dev_info,
-    "dev_disable": handle_dev_disable
+    "dev_disable": handle_dev_disable,
+    "dev_reload": handle_dev_reload,
+    "dev_auto_reload": handle_dev_auto_reload
 }

@@ -66,6 +66,30 @@ def get_save_field_with_default(data, field_name, default_value=None):
     
     return default_value
 
+def ensure_weapon_max_durability(weapons):
+    """Ensure all weapons have max_durability field for backward compatibility"""
+    if not weapons:
+        return weapons
+    
+    for weapon in weapons:
+        if "max_durability" not in weapon:
+            # Default: max_durability = current_durability + 5
+            weapon["max_durability"] = weapon.get("durability", 10) + 5
+    
+    return weapons
+
+def ensure_armor_max_durability(armors):
+    """Ensure all armor pieces have max_durability field for backward compatibility"""
+    if not armors:
+        return armors
+    
+    for armor in armors:
+        if "max_durability" not in armor:
+            # Default: max_durability = current_durability + 10
+            armor["max_durability"] = armor.get("durability", 10) + 10
+    
+    return armors
+
 # Directory for save files
 SAVE_DIR = "saves"
 DEFAULT_SAVE = "savegame.json"
@@ -365,6 +389,25 @@ def load_game(save_name=None):
     has_viewed_mechanics = get_save_field_with_default(data, "has_viewed_mechanics")
     materials_inventory = get_save_field_with_default(data, "materials_inventory")
     armor_broken = get_save_field_with_default(data, "armor_broken")
+    
+    # Ensure all weapons and armor have max_durability fields for backward compatibility
+    inventory = ensure_weapon_max_durability(inventory)
+    armor_inventory = ensure_armor_max_durability(armor_inventory)
+    if equipped_armor:
+        equipped_armor = ensure_armor_max_durability([equipped_armor])[0]
+    
+    # Ensure all weapons and armor in the world have max_durability fields
+    for floor in worlds.values():
+        for room in floor.values():
+            if "weapons" in room:
+                room["weapons"] = ensure_weapon_max_durability(room["weapons"])
+            if "armors" in room:
+                room["armors"] = ensure_armor_max_durability(room["armors"])
+            if "shop" in room and room["shop"]:
+                if "items" in room["shop"]:
+                    room["shop"]["items"] = ensure_weapon_max_durability(room["shop"]["items"])
+                if "armor" in room["shop"] and room["shop"]["armor"]:
+                    room["shop"]["armor"] = ensure_armor_max_durability([room["shop"]["armor"]])[0]
     
     save_display_name = data.get("save_name", save_name)
     print(f"Game loaded from '{save_display_name}'!")

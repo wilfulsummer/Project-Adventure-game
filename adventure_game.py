@@ -735,7 +735,11 @@ def show_room(room):
       print(f"A {key['name']} lies here. Use 'take_key' to pick it up.")
 
   if room.get("shop"):
-    print("This is a shop. Type 'buy' to see what's for sale.")
+    shop = room["shop"]
+    if shop.get("is_blacksmith"):
+      print("This is a blacksmith's forge. Type 'buy' to see what's for sale and repair services.")
+    else:
+      print("This is a shop. Type 'buy' to see what's for sale.")
 
   inv_names = [f"{w['name']}({w.get('durability', '-')})" for w in inventory if "damage" in w]
   if not inventory:

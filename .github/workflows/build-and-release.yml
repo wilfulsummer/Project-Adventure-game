@@ -26,7 +26,43 @@ jobs:
         
     - name: Build executable
       run: |
-        pyinstaller --onefile --console --name "Adventure_Game" main.py
+        # Create a spec file that excludes mods from the build
+        echo "# -*- mode: python ; coding: utf-8 -*-" > Adventure_Game.spec
+        echo "a = Analysis(['main.py']," >> Adventure_Game.spec
+        echo "             pathex=[]," >> Adventure_Game.spec
+        echo "             binaries=[]," >> Adventure_Game.spec
+        echo "             datas=[]," >> Adventure_Game.spec
+        echo "             hiddenimports=[]," >> Adventure_Game.spec
+        echo "             hookspath=[]," >> Adventure_Game.spec
+        echo "             hooksconfig={}," >> Adventure_Game.spec
+        echo "             runtime_hooks=[]," >> Adventure_Game.spec
+        echo "             excludes=['mods']," >> Adventure_Game.spec
+        echo "             win_no_prefer_redirects=False," >> Adventure_Game.spec
+        echo "             win_private_assemblies=False," >> Adventure_Game.spec
+        echo "             cipher=None," >> Adventure_Game.spec
+        echo "             noarchive=False)" >> Adventure_Game.spec
+        echo "pyz = PYZ(a.pure, a.zipped_data, cipher=None)" >> Adventure_Game.spec
+        echo "exe = EXE(pyz," >> Adventure_Game.spec
+        echo "          a.scripts," >> Adventure_Game.spec
+        echo "          a.binaries," >> Adventure_Game.spec
+        echo "          a.zipfiles," >> Adventure_Game.spec
+        echo "          a.datas," >> Adventure_Game.spec
+        echo "          []," >> Adventure_Game.spec
+        echo "          name='Adventure_Game'," >> Adventure_Game.spec
+        echo "          debug=False," >> Adventure_Game.spec
+        echo "          bootloader_ignore_signals=False," >> Adventure_Game.spec
+        echo "          strip=False," >> Adventure_Game.spec
+        echo "          upx=True," >> Adventure_Game.spec
+        echo "          upx_exclude=[]," >> Adventure_Game.spec
+        echo "          console=True," >> Adventure_Game.spec
+        echo "          disable_windowed_traceback=False," >> Adventure_Game.spec
+        echo "          argv_emulation=False," >> Adventure_Game.spec
+        echo "          target_arch=None," >> Adventure_Game.spec
+        echo "          codesign_identity=None," >> Adventure_Game.spec
+        echo "          entitlements_file=None)" >> Adventure_Game.spec
+        
+        # Build using the spec file
+        pyinstaller Adventure_Game.spec
         
     - name: Create release assets
       run: |
@@ -41,6 +77,9 @@ jobs:
         # Copy essential files
         copy README.md Adventure_Game_Release\
         if (Test-Path "LICENSE") { copy LICENSE Adventure_Game_Release\ }
+        
+        # Copy mod installation guide
+        copy mods\INSTALLATION_GUIDE.md Adventure_Game_Release\
         
         # Copy the entire mods folder structure
         echo "Copying mods folder contents..."

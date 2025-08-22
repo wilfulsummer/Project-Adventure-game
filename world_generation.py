@@ -34,11 +34,15 @@ def create_weapon(x, y):
             mana_cost = max(10, damage + random.randint(-2, 2))  # Base 10 + scaling with damage
         
         durability = 0 if is_broken else (base_durability + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
+        # Max durability scales 1.25x more than regular durability with some RNG
+        max_durability_bonus = int((durability_bonus * 1.25) + random.randint(2, 6))  # 1.25x scaling + 2-6 RNG
+        max_durability = durability + max_durability_bonus
+        
         return {
             "name": weapon_name,
             "damage": damage,
             "durability": durability,
-            "max_durability": durability,
+            "max_durability": max_durability,
             "requires_mana": True,
             "mana_cost": mana_cost,
             "is_broken": is_broken,
@@ -47,11 +51,15 @@ def create_weapon(x, y):
         }
     elif weapon_name == "Spell Book":
         durability = 0 if is_broken else (random.randint(15, 25) + durability_bonus + random.randint(5, 8))  # +5 to +8 extra durability
+        # Max durability scales 1.25x more than regular durability with some RNG
+        max_durability_bonus = int((durability_bonus * 1.25) + random.randint(2, 6))  # 1.25x scaling + 2-6 RNG
+        max_durability = durability + max_durability_bonus
+        
         return {
             "name": weapon_name,
             "damage": "???",
             "durability": durability,
-            "max_durability": durability,
+            "max_durability": max_durability,
             "is_broken": is_broken
         }
     elif weapon_name == "Sword":
@@ -68,11 +76,15 @@ def create_weapon(x, y):
             crit_damage = 2.0   # Base 2x crit damage
         
         durability = 0 if is_broken else (base_durability + durability_bonus + random.randint(3, 5))
+        # Max durability scales 1.25x more than regular durability with some RNG
+        max_durability_bonus = int((durability_bonus * 1.25) + random.randint(2, 6))  # 1.25x scaling + 2-6 RNG
+        max_durability = durability + max_durability_bonus
+        
         return {
             "name": weapon_name,
             "damage": damage,
             "durability": durability,
-            "max_durability": durability,
+            "max_durability": max_durability,
             "is_broken": is_broken,
             "crit_chance": crit_chance,
             "crit_damage": crit_damage
@@ -89,11 +101,15 @@ def create_weapon(x, y):
             crit_damage = 2.0   # Base 2x crit damage
         
         durability = 0 if is_broken else (base_durability + durability_bonus)
+        # Max durability scales 1.25x more than regular durability with some RNG
+        max_durability_bonus = int((durability_bonus * 1.25) + random.randint(2, 6))  # 1.25x scaling + 2-6 RNG
+        max_durability = durability + max_durability_bonus
+        
         return {
             "name": weapon_name,
             "damage": damage,
             "durability": durability,
-            "max_durability": durability,
+            "max_durability": max_durability,
             "is_broken": is_broken,
             "crit_chance": crit_chance,
             "crit_damage": crit_damage
@@ -111,11 +127,15 @@ def create_armor(x, y):
     is_broken = random.random() < 0.04
     
     durability = 0 if is_broken else (base_durability + scaled * random.choice([0, 1]))
+    # Max durability scales 1.25x more than regular durability with some RNG
+    max_durability_bonus = int((scaled * random.choice([0, 1]) * 1.25) + random.randint(2, 6))  # 1.25x scaling + 2-6 RNG
+    max_durability = durability + max_durability_bonus
+    
     return {
         "name": random.choice(["Leather Armor", "Iron Mail", "Bone Plate", "Troll Hide"]),
         "defense": base_defense + scaled * random.choice([0, 1]),
         "durability": durability,
-        "max_durability": durability
+        "max_durability": max_durability
     }
 
 def create_chest_weapon(dist):
@@ -178,16 +198,20 @@ def create_chest_weapon(dist):
             crit_chance = 0.05  # Base 5% crit chance
             crit_damage = 2.0   # Base 2x crit damage
         
-        durability = 0 if is_broken else (base_durability + durability_bonus)
-        return {
-            "name": weapon_name,
-            "damage": damage,
-            "durability": durability,
-            "max_durability": durability,
-            "is_broken": is_broken,
-            "crit_chance": crit_chance,
-            "crit_damage": crit_damage
-        }
+            durability = 0 if is_broken else (base_durability + durability_bonus)
+    # Max durability scales 1.25x more than regular durability with some RNG
+    max_durability_bonus = int((durability_bonus * 1.25) + random.randint(2, 6))  # 1.25x scaling + 2-6 RNG
+    max_durability = durability + max_durability_bonus
+    
+    return {
+        "name": weapon_name,
+        "damage": damage,
+        "durability": durability,
+        "max_durability": max_durability,
+        "is_broken": is_broken,
+        "crit_chance": crit_chance,
+        "crit_damage": crit_damage
+    }
 
 def create_chest_armor(x, y):
     dist = distance_from_start(x, y) + random.randint(3, 5)
@@ -203,11 +227,15 @@ def create_chest_armor(x, y):
     is_broken = random.random() < 0.04
     
     durability = 0 if is_broken else (base_durability + bonus_dur)
+    # Max durability scales 1.25x more than regular durability with some RNG
+    max_durability_bonus = int((bonus_dur * 1.25) + random.randint(2, 6))  # 1.25x scaling + 2-6 RNG
+    max_durability = durability + max_durability_bonus
+    
     return {
         "name": random.choice(["Enchanted Mail", "Reinforced Hide", "Darksteel Vest", "Trollbone Harness"]),
         "defense": base_defense + bonus_def,
         "durability": durability,
-        "max_durability": durability
+        "max_durability": max_durability
     }
 
 def create_enemy(x, y, force_boss=None):
@@ -391,6 +419,9 @@ def create_room(floor, x, y, learned_spells):
         is_discount_shop = random.random() < 0.35
         discount_multiplier = 0.875 if is_discount_shop else 1.0  # 7.5-12.5% discount (average 10%)
         
+        # 30% chance for blacksmith shop (when shop is generated)
+        is_blacksmith = random.random() < 0.3
+        
         shop = {
             "items": items,
             "potion_price": int(random.randint(8, 15) * discount_multiplier),
@@ -405,7 +436,10 @@ def create_room(floor, x, y, learned_spells):
             "waypoint_scrolls": random.randint(1, 2) if random.random() < 0.3 else 0,
             "waypoint_scroll_price": int(random.randint(25, 35) * discount_multiplier),
             "spell_scrolls": spell_scrolls_shop,
-            "is_discount_shop": is_discount_shop
+            "is_discount_shop": is_discount_shop,
+            "is_blacksmith": is_blacksmith,
+            "repair_price": int(1 * discount_multiplier) if is_blacksmith else None,  # Cost per durability point (1 gold base)
+            "repair_bonus": random.randint(1, 3) if is_blacksmith else 0  # Extra durability restored
         }
         
         # Apply discount to weapon costs
@@ -425,7 +459,12 @@ def create_room(floor, x, y, learned_spells):
                     price = int(base_price * 0.7)
                 shop["spell_scroll_prices"][spell_name] = price
         
-        shop_description = "A cozy discount shop with items for sale at reduced prices!" if is_discount_shop else "A cozy shop with items for sale."
+        if is_blacksmith:
+            shop_description = "A blacksmith's forge with weapons for sale and repair services available!"
+        elif is_discount_shop:
+            shop_description = "A cozy discount shop with items for sale at reduced prices!"
+        else:
+            shop_description = "A cozy shop with items for sale."
         
         return {
             "description": shop_description,
