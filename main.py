@@ -131,19 +131,36 @@ def main():
     from unique_items import load_unique_items
     load_unique_items()
     
-    # Initialize mod system
-    from mods.mod_loader import mod_loader
-    mod_loader.load_mods()
-    mod_loader.call_startup_hooks()
-    
-    # Show mod status
-    if mod_loader.are_mods_available():
-        loaded_count = len(mod_loader.list_mods())
-        print(f"\n[Mods] {loaded_count} mod(s) loaded successfully!")
-        if loaded_count > 0:
-            print("[Mods] Type 'mods' to see mod information")
-    else:
-        print("\n[Mods] No mods folder found - mods will be available in compiled version")
+    # Initialize mod system (optional - gracefully handle if not available)
+    try:
+        from mods.mod_loader import mod_loader
+        mod_loader.load_mods()
+        mod_loader.call_startup_hooks()
+        
+        # Show mod status
+        if mod_loader.are_mods_available():
+            loaded_count = len(mod_loader.list_mods())
+            print(f"\n[Mods] {loaded_count} mod(s) loaded successfully!")
+            if loaded_count > 0:
+                print("[Mods] Type 'mods' to see mod information")
+        else:
+            print("\n[Mods] No mods folder found - mods will be available in compiled version")
+    except ImportError:
+        print("\n[Mods] Mods package not found. Running without mods.")
+        # Create a dummy mod_loader object to prevent crashes
+        class DummyModLoader:
+            def are_mods_available(self): return False
+            def list_mods(self): return []
+            def get_mod_guides(self): return {}
+            def get_instance_info(self): return "No mods available"
+            def get_mods_status(self): return "Mods disabled"
+            def get_mod_info(self, name): return None
+            def reload_specific_mod(self, name): pass
+            def auto_reload_changed_mods(self): pass
+            def call_startup_hooks(self): pass
+            def load_mods(self): pass
+        
+        mod_loader = DummyModLoader()
     
     print("\n=== ADVENTURE GAME ===")
     print("Welcome to the Adventure Game!")
@@ -549,72 +566,89 @@ def main():
             print("==========================")
         
         elif command == "mods":
-            from mods.mod_loader import mod_loader
-            print("\n=== MOD SYSTEM STATUS ===")
-            
-            # Show mod loader status
-            instance_info = mod_loader.get_instance_info()
-            print(f"Status: {mod_loader.get_mods_status()}")
-            print(f"Game Root: {instance_info['game_root']}")
-            print(f"Mods Directory: {instance_info['mods_directory']}")
-            print(f"Compiled: {'Yes' if instance_info['is_compiled'] else 'No'}")
-            print()
-            
-            # Show loaded mods
-            loaded_mods = mod_loader.list_mods()
-            if loaded_mods:
-                print("=== LOADED MODS ===")
-                for mod_name in loaded_mods:
-                    mod_info = mod_loader.get_mod_info(mod_name)
-                    if mod_info:
-                        print(f"  • {mod_info['name']} v{mod_info['version']} by {mod_info['author']}")
-                        print(f"    {mod_info['description']}")
-                        print(f"    Content: {mod_info['unique_items']} uniques, {mod_info['enemies']} enemies, {mod_info['weapons']} weapons, {mod_info['armors']} armors, {mod_info['spells']} spells, {mod_info['commands']} commands")
-                        print()
-                print("===================")
-            else:
-                print("No mods are currently loaded.")
+            try:
+                from mods.mod_loader import mod_loader
+                print("\n=== MOD SYSTEM STATUS ===")
                 
-                # Give helpful information based on status
-                if not mod_loader.are_mods_available():
-                    if instance_info['is_compiled']:
-                        print("Note: This is a compiled game but the mods folder is missing.")
-                        print("To enable mods, ensure the 'mods' folder is in the same directory as the .exe file.")
-                    else:
-                        print("Note: This is source code without a mods folder.")
-                        print("Mods will be available when you run the compiled game.")
+                # Show mod loader status
+                instance_info = mod_loader.get_instance_info()
+                print(f"Status: {mod_loader.get_mods_status()}")
+                print(f"Game Root: {instance_info['game_root']}")
+                print(f"Mods Directory: {instance_info['mods_directory']}")
+                print(f"Compiled: {'Yes' if instance_info['is_compiled'] else 'No'}")
+                print()
+                
+                # Show loaded mods
+                loaded_mods = mod_loader.list_mods()
+                if loaded_mods:
+                    print("=== LOADED MODS ===")
+                    for mod_name in loaded_mods:
+                        mod_info = mod_loader.get_mod_info(mod_name)
+                        if mod_info:
+                            print(f"  • {mod_info['name']} v{mod_info['version']} by {mod_info['author']}")
+                            print(f"    {mod_info['description']}")
+                            print(f"    Content: {mod_info['unique_items']} uniques, {mod_info['enemies']} enemies, {mod_info['weapons']} weapons, {mod_info['armors']} armors, {mod_info['spells']} spells, {mod_info['commands']} commands")
+                            print()
+                    print("===================")
                 else:
-                    print("Note: Mods folder found but no mods are loaded.")
-                    print("Check mods.json to see which mods are enabled.")
-            
-            print("==========================")
+                    print("No mods are currently loaded.")
+                    
+                    # Give helpful information based on status
+                    if not mod_loader.are_mods_available():
+                        if instance_info['is_compiled']:
+                            print("Note: This is a compiled game but the mods folder is missing.")
+                            print("To enable mods, ensure the 'mods' folder is in the same directory as the .exe file.")
+                        else:
+                            print("Note: This is source code without a mods folder.")
+                            print("Mods will be available when you run the compiled game.")
+                    else:
+                        print("Note: Mods folder found but no mods are loaded.")
+                        print("Check mods.json to see which mods are enabled.")
+                
+                print("==========================")
+            except ImportError:
+                print("\n=== MOD SYSTEM STATUS ===")
+                print("Mods package not available.")
+                print("Status: Mods disabled")
+                print("Game Root: Unknown")
+                print("Mods Directory: Not found")
+                print("Compiled: Yes")
+                print()
+                print("No mods are currently loaded.")
+                print("Note: This is a compiled game but the mods package is missing.")
+                print("To enable mods, ensure the 'mods' folder is in the same directory as the .exe file.")
+                print("==========================")
         
         # Handle mod commands
         elif command.startswith("dev_"):
-            from mods.mod_loader import mod_loader
-            # Split command into parts
-            cmd_parts = command.split()
-            cmd_name = cmd_parts[0]
-            cmd_args = cmd_parts[1:] if len(cmd_parts) > 1 else []
-            
-            # Look for the command in loaded mods
-            mod_command = None
-            for mod_name in mod_loader.list_mods():
-                if mod_name == "developer_mod":
-                    # Import the developer mod to access its command handlers
-                    try:
-                        from mods.developer_mod.mod import admin_commands
-                        if cmd_name in admin_commands:
-                            mod_command = admin_commands[cmd_name]
-                            break
-                    except ImportError:
-                        continue
-            
-            if mod_command:
-                mod_command(cmd_args)
-            else:
-                print(f"Unknown developer command: {cmd_name}")
-                print("Type 'dev_info' for available developer commands.")
+            try:
+                from mods.mod_loader import mod_loader
+                # Split command into parts
+                cmd_parts = command.split()
+                cmd_name = cmd_parts[0]
+                cmd_args = cmd_parts[1:] if len(cmd_parts) > 1 else []
+                
+                # Look for the command in loaded mods
+                mod_command = None
+                for mod_name in mod_loader.list_mods():
+                    if mod_name == "developer_mod":
+                        # Import the developer mod to access its command handlers
+                        try:
+                            from mods.developer_mod.mod import admin_commands
+                            if cmd_name in admin_commands:
+                                mod_command = admin_commands[cmd_name]
+                                break
+                        except ImportError:
+                            continue
+                
+                if mod_command:
+                    mod_command(cmd_args)
+                else:
+                    print(f"Unknown developer command: {cmd_name}")
+                    print("Type 'dev_info' for available developer commands.")
+            except ImportError:
+                print("Developer commands not available - mods package not found.")
+                print("To use developer commands, ensure the 'mods' folder is in the same directory as the .exe file.")
         
         # Movement commands
         elif command in ["north", "south", "east", "west"]:
