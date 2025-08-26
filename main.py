@@ -21,7 +21,11 @@ def handle_player_death():
     print("Your adventure has ended...")
     
     while True:
-        choice = input("\nWould you like to restart? (yes/no): ").lower().strip()
+        try:
+            choice = input("\nWould you like to restart? (yes/no): ").lower().strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nGame interrupted. Exiting...")
+            return False
         if choice in ['yes', 'y']:
             print("\nRestarting game...")
             # Reset all game state variables for complete new save
@@ -175,7 +179,11 @@ def main():
         for i, (file_name, display_name) in enumerate(save_files, 1):
             print(f"  {i}. {display_name}")
         
-        answer = input("\nLoad previous save? (yes/no/delete): ").lower()
+        try:
+            answer = input("\nLoad previous save? (yes/no/delete): ").lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\nGame interrupted. Exiting...")
+            return False
         if answer == "yes":
             loaded_data = load_game()
             if loaded_data:
@@ -204,17 +212,22 @@ def main():
                         choice_num = int(choice)
                         if 1 <= choice_num <= len(save_files):
                             save_name = save_files[choice_num - 1][0]
-                            confirm = input(f"Are you sure you want to delete '{save_name}'? (yes/no): ").lower().strip()
-                            if confirm in ['yes', 'y']:
-                                from save_load import delete_save
-                                delete_save(save_name)
-                            break
+                            try:
+                                confirm = input(f"Are you sure you want to delete '{save_name}'? (yes/no): ").lower().strip()
+                                if confirm in ['yes', 'y']:
+                                    from save_load import delete_save
+                                    delete_save(save_name)
+                                break
+                            except (EOFError, KeyboardInterrupt):
+                                print("\nDelete cancelled.")
+                                break
                         else:
                             print(f"Please enter a number between 1 and {len(save_files)}")
                     else:
                         print("Please enter a valid number or press Enter to cancel.")
-                except ValueError:
-                    print("Please enter a valid number.")
+                except (ValueError, EOFError, KeyboardInterrupt):
+                    print("Please enter a valid number or press Enter to cancel.")
+                    break
 
     while True:
         current_room = get_room(player_floor, player_x, player_y, worlds, learned_spells)
@@ -224,8 +237,26 @@ def main():
                   golden_keys, equipped_armor, spell_scrolls, learned_spells, discovered_enemies, unlocked_floors,
                   player_level, player_xp, player_xp_to_next)
 
-        command = input("\nWhat do you do? ").lower().strip()
-        print("=" * 50)  # Add separator line after command input
+        try:
+            command = input("\nWhat do you do? ").lower().strip()
+            print("=" * 50)  # Add separator line after command input
+        except (EOFError, KeyboardInterrupt):
+            print("\n\nGame interrupted. Saving and exiting...")
+            try:
+                from save_load import auto_save_game
+                auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
+                             player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
+                             player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
+                             unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
+                             player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated, total_damage_dealt,
+                             total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
+                             items_collected, weapons_broken, gold_earned)
+                print("(Auto-saved before exit!)")
+            except Exception as e:
+                print(f"(Auto-save failed: {e})")
+            print("Game over!")
+            print("Thanks for playing!")
+            break
 
         if command == "quit":
             # Auto-save before quitting
@@ -250,9 +281,13 @@ def main():
         # This is where you'll implement all the game logic
         # For now, just a basic structure
         elif command == "save":
-            save_name = input("Enter save name (or press Enter for default): ").strip()
-            if not save_name:
-                save_name = "default"
+            try:
+                save_name = input("Enter save name (or press Enter for default): ").strip()
+                if not save_name:
+                    save_name = "default"
+            except (EOFError, KeyboardInterrupt):
+                print("Save cancelled.")
+                continue
             save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, player_floor, player_x, player_y,
                      player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana,
                      player_money, player_potions, stamina_potions, mana_potions, mysterious_keys, golden_keys,
@@ -685,10 +720,26 @@ def main():
         # Combat commands
         elif command == "attack":
             # Use the proper handle_attack function that handles multiple enemies correctly
-            success = handle_attack(current_room, inventory, player_mana, equipped_armor, player_hp, 
+            result = handle_attack(current_room, inventory, player_mana, equipped_armor, player_hp, 
                                   discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells, using_fists,
                                   attack_count, critical_hits, total_damage_dealt, total_damage_taken, 
-                                  enemies_defeated, bosses_defeated, weapons_broken, armor_broken)
+                                  enemies_defeated, bosses_defeated, weapons_broken, armor_broken, gold_earned)
+            
+            if isinstance(result, tuple):
+                success, updated_stats = result
+                # Update global statistics with returned values
+                attack_count = updated_stats['attack_count']
+                critical_hits = updated_stats['critical_hits']
+                total_damage_dealt = updated_stats['total_damage_dealt']
+                total_damage_taken = updated_stats['total_damage_taken']
+                enemies_defeated = updated_stats['enemies_defeated']
+                bosses_defeated = updated_stats['bosses_defeated']
+                weapons_broken = updated_stats['weapons_broken']
+                armor_broken = updated_stats['armor_broken']
+                gold_earned = updated_stats['gold_earned']
+                player_money = updated_stats['player_money']
+            else:
+                success = result
             
             if not success:
                 # Player was defeated
@@ -774,90 +825,218 @@ def main():
                     continue
                 
                 print("\nShop inventory:")
-                for i, item in enumerate(shop.get("items", [])):
-                    print(f"  {i+1}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}) - {item['cost']} gold (1 left)")
+                
+                # Group items by name to show quantities
+                item_groups = {}
+                for item in shop.get("items", []):
+                    item_name = item['name']
+                    if item_name not in item_groups:
+                        item_groups[item_name] = []
+                    item_groups[item_name].append(item)
+                
+                # Display grouped items
+                item_index = 1
+                for item_name, items in item_groups.items():
+                    if len(items) == 1:
+                        item = items[0]
+                        print(f"  {item_index}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}) - {item['cost']} gold")
+                    else:
+                        item = items[0]  # Use first item for stats
+                        print(f"  {item_index}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}) - {item['cost']} gold ({len(items)} available)")
+                    item_index += 1
+                
                 if shop.get("armor"):
                     armor = shop["armor"]
                     armor_price = 14 if not shop.get("is_discount_shop") else int(14 * shop.get("spell_scroll_discount", 1.0))
-                    print(f"  R. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}) - {armor_price} gold (1 left)")
-                print(f"  P. Health Potion - {shop.get('potion_price', 15)} gold ({shop.get('health_potions', 0)} left)")
+                    print(f"  R. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}) - {armor_price} gold")
+                print(f"  P. Health Potion - {shop.get('potion_price', 15)} gold ({shop.get('health_potions', 0)} available)")
                 if shop.get("stamina_potions", 0) > 0:
-                    print(f"  S. Stamina Potion - {shop.get('stamina_potion_price', 15)} gold ({shop.get('stamina_potions', 0)} left)")
+                    print(f"  S. Stamina Potion - {shop.get('stamina_potion_price', 15)} gold ({shop.get('stamina_potions', 0)} available)")
                 if shop.get("mana_potions", 0) > 0:
-                    print(f"  M. Mana Potion - {shop.get('mana_potion_price', 15)} gold ({shop.get('mana_potions', 0)} left)")
+                    print(f"  M. Mana Potion - {shop.get('mana_potion_price', 15)} gold ({shop.get('mana_potions', 0)} available)")
                 if shop.get("golden_keys", 0) > 0:
                     key_price = 35 if not shop.get("is_discount_shop") else int(35 * shop.get("spell_scroll_discount", 1.0))
-                    print(f"  K. Golden Key - {key_price} gold ({shop.get('golden_keys', 0)} left)")
+                    print(f"  K. Golden Key - {key_price} gold ({shop.get('golden_keys', 0)} available)")
                 if shop.get("life_crystal"):
                     crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
-                    print(f"  L. Life Crystal - {crystal_price} gold (1 left)")
+                    print(f"  L. Life Crystal - {crystal_price} gold")
                 if shop.get("stamina_crystal"):
                     crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
-                    print(f"  T. Stamina Crystal - {crystal_price} gold (1 left)")
+                    print(f"  T. Stamina Crystal - {crystal_price} gold")
                 if shop.get("mana_crystal"):
                     crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
-                    print(f"  N. Mana Crystal - {crystal_price} gold (1 left)")
+                    print(f"  N. Mana Crystal - {crystal_price} gold")
                 if shop.get("waypoint_scrolls", 0) > 0:
                     waypoint_price = shop.get('waypoint_scroll_price', 25)
-                    print(f"  W. Waypoint Scroll - {waypoint_price} gold ({shop.get('waypoint_scrolls', 0)} left)")
+                    print(f"  W. Waypoint Scroll - {waypoint_price} gold ({shop.get('waypoint_scrolls', 0)} available)")
                 
-                # Show repair option for blacksmith shops
+                # Show repair option for blacksmith shops (infinite)
                 if shop.get("is_blacksmith"):
-                    repair_price = shop.get("repair_price", 10)
+                    repair_price = shop.get("repair_price", 1)
                     repair_bonus = shop.get("repair_bonus", 1)
-                    print(f"  B. Weapon Repair - {repair_price} gold per durability point (+{repair_bonus} bonus)")
-                    print(f"  U. Upgrade Max Durability - 2 gold per +1 max durability")
+                    print(f"  B. Weapon Repair - {repair_price} gold per durability point (+{repair_bonus} bonus) - INFINITE")
+                    print(f"  U. Upgrade Max Durability - 2 gold per +1 max durability - INFINITE")
                 
                 # Show spell scrolls
                 if shop.get("spell_scrolls"):
                     print("Spell Scrolls:")
                     for i, (spell_name, count) in enumerate(shop["spell_scrolls"].items()):
                         price = shop.get("spell_scroll_prices", {}).get(spell_name, 40)
-                        print(f"  {chr(65 + i)}. {spell_name} Scroll - {price} gold ({count} left)")
+                        print(f"  {chr(65 + i)}. {spell_name} Scroll - {price} gold ({count} available)")
                 
                 choice = input("What would you like to buy? (or 'cancel'): ").strip()
                 
                 if choice == "cancel":
                     print("You leave the shop.")
                 elif choice.lower() == "p":
-                    if shop.get("health_potions", 0) > 0:
-                        if player_money >= shop.get("potion_price", 15):
-                            player_money -= shop.get("potion_price", 15)
-                            player_potions += 1
-                            shop["health_potions"] = shop.get("health_potions", 0) - 1
-                            print("You bought a health potion!")
+                    health_potions_available = shop.get("health_potions", 0)
+                    if health_potions_available > 0:
+                        if health_potions_available == 1:
+                            # Single potion - auto-buy
+                            if player_money >= shop.get("potion_price", 15):
+                                player_money -= shop.get("potion_price", 15)
+                                player_potions += 1
+                                shop["health_potions"] = health_potions_available - 1
+                                print("You bought a health potion!")
+                            else:
+                                print("You don't have enough gold.")
                         else:
-                            print("You don't have enough gold.")
+                            # Multiple potions - ask for quantity
+                            print(f"\n{health_potions_available} health potions available at {shop.get('potion_price', 15)} gold each.")
+                            print(f"Your gold: {player_money}")
+                            
+                            try:
+                                quantity = input(f"How many health potions would you like to buy? (1-{health_potions_available}): ").strip()
+                                if quantity.lower() == "cancel":
+                                    continue
+                                
+                                qty = int(quantity)
+                                if 1 <= qty <= health_potions_available:
+                                    total_cost = qty * shop.get("potion_price", 15)
+                                    if player_money >= total_cost:
+                                        player_money -= total_cost
+                                        player_potions += qty
+                                        shop["health_potions"] = health_potions_available - qty
+                                        print(f"You bought {qty} health potions for {total_cost} gold!")
+                                    else:
+                                        print(f"You don't have enough gold. You need {total_cost} gold.")
+                                else:
+                                    print(f"Please enter a number between 1 and {health_potions_available}.")
+                            except ValueError:
+                                print("Please enter a valid number.")
                     else:
                         print("No health potions available.")
                 elif choice.lower() == "s" and shop.get("stamina_potions", 0) > 0:
-                    if player_money >= shop.get("stamina_potion_price", 15):
-                        player_money -= shop.get("stamina_potion_price", 15)
-                        stamina_potions += 1
-                        shop["stamina_potions"] = shop.get("stamina_potions", 0) - 1
-                        print("You bought a stamina potion!")
+                    stamina_potions_available = shop.get("stamina_potions", 0)
+                    if stamina_potions_available == 1:
+                        # Single potion - auto-buy
+                        if player_money >= shop.get("stamina_potion_price", 15):
+                            player_money -= shop.get("stamina_potion_price", 15)
+                            stamina_potions += 1
+                            shop["stamina_potions"] = stamina_potions_available - 1
+                            print("You bought a stamina potion!")
+                        else:
+                            print("You don't have enough gold.")
                     else:
-                        print("You don't have enough gold.")
+                        # Multiple potions - ask for quantity
+                        print(f"\n{stamina_potions_available} stamina potions available at {shop.get('stamina_potion_price', 15)} gold each.")
+                        print(f"Your gold: {player_money}")
+                        
+                        try:
+                            quantity = input(f"How many stamina potions would you like to buy? (1-{stamina_potions_available}): ").strip()
+                            if quantity.lower() == "cancel":
+                                continue
+                            
+                            qty = int(quantity)
+                            if 1 <= qty <= stamina_potions_available:
+                                total_cost = qty * shop.get("stamina_potion_price", 15)
+                                if player_money >= total_cost:
+                                    player_money -= total_cost
+                                    stamina_potions += qty
+                                    shop["stamina_potions"] = stamina_potions_available - qty
+                                    print(f"You bought {qty} stamina potions for {total_cost} gold!")
+                                else:
+                                    print(f"You don't have enough gold. You need {total_cost} gold.")
+                            else:
+                                print(f"Please enter a number between 1 and {stamina_potions_available}.")
+                        except ValueError:
+                            print("Please enter a valid number.")
                 elif choice.lower() == "m" and shop.get("mana_potions", 0) > 0:
-                    if player_money >= shop.get("mana_potion_price", 15):
-                        player_money -= shop.get("mana_potion_price", 15)
-                        mana_potions += 1
-                        shop["mana_potions"] = shop.get("mana_potions", 0) - 1
-                        print("You bought a mana potion!")
+                    mana_potions_available = shop.get("mana_potions", 0)
+                    if mana_potions_available == 1:
+                        # Single potion - auto-buy
+                        if player_money >= shop.get("mana_potion_price", 15):
+                            player_money -= shop.get("mana_potion_price", 15)
+                            mana_potions += 1
+                            shop["mana_potions"] = mana_potions_available - 1
+                            print("You bought a mana potion!")
+                        else:
+                            print("You don't have enough gold.")
                     else:
-                        print("You don't have enough gold.")
+                        # Multiple potions - ask for quantity
+                        print(f"\n{mana_potions_available} mana potions available at {shop.get('mana_potion_price', 15)} gold each.")
+                        print(f"Your gold: {player_money}")
+                        
+                        try:
+                            quantity = input(f"How many mana potions would you like to buy? (1-{mana_potions_available}): ").strip()
+                            if quantity.lower() == "cancel":
+                                continue
+                            
+                            qty = int(quantity)
+                            if 1 <= qty <= mana_potions_available:
+                                total_cost = qty * shop.get("mana_potion_price", 15)
+                                if player_money >= total_cost:
+                                    player_money -= total_cost
+                                    mana_potions += qty
+                                    shop["mana_potions"] = mana_potions_available - qty
+                                    print(f"You bought {qty} mana potions for {total_cost} gold!")
+                                else:
+                                    print(f"You don't have enough gold. You need {total_cost} gold.")
+                            else:
+                                print(f"Please enter a number between 1 and {mana_potions_available}.")
+                        except ValueError:
+                            print("Please enter a valid number.")
                 elif choice.lower() == "k" and shop.get("golden_keys", 0) > 0:
+                    golden_keys_available = shop.get("golden_keys", 0)
                     key_price = 35 if not shop.get("is_discount_shop") else int(35 * shop.get("spell_scroll_discount", 1.0))
-                    if player_money >= key_price:
-                        if golden_keys < 3:
+                    max_keys_can_buy = min(golden_keys_available, 3 - golden_keys)
+                    
+                    if max_keys_can_buy <= 0:
+                        print("You can only carry 3 golden keys maximum!")
+                    elif golden_keys_available == 1:
+                        # Single key - auto-buy
+                        if player_money >= key_price:
                             player_money -= key_price
                             golden_keys += 1
-                            shop["golden_keys"] = shop.get("golden_keys", 0) - 1
+                            shop["golden_keys"] = golden_keys_available - 1
                             print(f"You bought a golden key! (You now have {golden_keys})")
                         else:
-                            print("You can only carry 3 golden keys maximum!")
+                            print("You don't have enough gold.")
                     else:
-                        print("You don't have enough gold.")
+                        # Multiple keys - ask for quantity
+                        print(f"\n{golden_keys_available} golden keys available at {key_price} gold each.")
+                        print(f"Your gold: {player_money}")
+                        print(f"You can carry up to {max_keys_can_buy} more keys.")
+                        
+                        try:
+                            quantity = input(f"How many golden keys would you like to buy? (1-{max_keys_can_buy}): ").strip()
+                            if quantity.lower() == "cancel":
+                                continue
+                            
+                            qty = int(quantity)
+                            if 1 <= qty <= max_keys_can_buy:
+                                total_cost = qty * key_price
+                                if player_money >= total_cost:
+                                    player_money -= total_cost
+                                    golden_keys += qty
+                                    shop["golden_keys"] = golden_keys_available - qty
+                                    print(f"You bought {qty} golden keys for {total_cost} gold! (You now have {golden_keys})")
+                                else:
+                                    print(f"You don't have enough gold. You need {total_cost} gold.")
+                            else:
+                                print(f"Please enter a number between 1 and {max_keys_can_buy}.")
+                        except ValueError:
+                            print("Please enter a valid number.")
                 elif choice.lower() == "l" and shop.get("life_crystal"):
                     crystal_price = 21 if not shop.get("is_discount_shop") else int(21 * shop.get("spell_scroll_discount", 1.0))
                     if player_money >= crystal_price:
@@ -1003,17 +1182,64 @@ def main():
                 elif choice.isdigit():
                     choice_num = int(choice) - 1
                     if 0 <= choice_num < len(shop.get("items", [])):
-                        item = shop["items"][choice_num]
-                        if player_money >= item["cost"]:
-                            if len(inventory) < MAX_WEAPONS:
-                                player_money -= item["cost"]
-                                inventory.append(item)
-                                shop["items"].pop(choice_num)  # Remove item from shop
-                                print(f"You bought the {item['name']}!")
+                        # Group items by name to find how many are available
+                        item_groups = {}
+                        for item in shop.get("items", []):
+                            item_name = item['name']
+                            if item_name not in item_groups:
+                                item_groups[item_name] = []
+                            item_groups[item_name].append(item)
+                        
+                        # Get the item name for the selected index
+                        item_names = list(item_groups.keys())
+                        if 0 <= choice_num < len(item_names):
+                            item_name = item_names[choice_num]
+                            items_available = item_groups[item_name]
+                            
+                            if len(items_available) == 1:
+                                # Single item - auto-buy
+                                item = items_available[0]
+                                if player_money >= item["cost"]:
+                                    if len(inventory) < MAX_WEAPONS:
+                                        player_money -= item["cost"]
+                                        inventory.append(item)
+                                        shop["items"].remove(item)  # Remove item from shop
+                                        print(f"You bought the {item['name']}!")
+                                    else:
+                                        print("Your weapon inventory is full! Drop a weapon first.")
+                                else:
+                                    print("You don't have enough gold.")
                             else:
-                                print("Your weapon inventory is full! Drop a weapon first.")
+                                # Multiple items - ask for quantity
+                                print(f"\n{len(items_available)} {item_name}s available at {items_available[0]['cost']} gold each.")
+                                print(f"Your inventory space: {len(inventory)}/{MAX_WEAPONS}")
+                                print(f"Your gold: {player_money}")
+                                
+                                try:
+                                    quantity = input(f"How many {item_name}s would you like to buy? (1-{min(len(items_available), MAX_WEAPONS - len(inventory))}): ").strip()
+                                    if quantity.lower() == "cancel":
+                                        continue
+                                    
+                                    qty = int(quantity)
+                                    if 1 <= qty <= len(items_available) and qty <= (MAX_WEAPONS - len(inventory)):
+                                        total_cost = qty * items_available[0]["cost"]
+                                        if player_money >= total_cost:
+                                            # Buy the specified quantity
+                                            for _ in range(qty):
+                                                item = items_available.pop(0)  # Take from front of list
+                                                inventory.append(item)
+                                                shop["items"].remove(item)  # Remove from shop
+                                            
+                                            player_money -= total_cost
+                                            print(f"You bought {qty} {item_name}s for {total_cost} gold!")
+                                        else:
+                                            print(f"You don't have enough gold. You need {total_cost} gold.")
+                                    else:
+                                        print(f"Please enter a number between 1 and {min(len(items_available), MAX_WEAPONS - len(inventory))}.")
+                                except ValueError:
+                                    print("Please enter a valid number.")
                         else:
-                            print("You don't have enough gold.")
+                            print("Invalid choice.")
                     else:
                         print("Invalid choice.")
                 elif choice.isalpha() and len(choice) == 1:

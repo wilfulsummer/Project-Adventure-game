@@ -72,10 +72,24 @@ def handle_movement(command, current_room, player_floor, player_x, player_y, wor
 def handle_attack(current_room, inventory, player_mana, equipped_armor, player_hp, 
                  discovered_enemies, mysterious_keys, player_floor, player_money, learned_spells, spells, using_fists=False,
                  attack_count=0, critical_hits=0, total_damage_dealt=0, total_damage_taken=0, 
-                 enemies_defeated=0, bosses_defeated=0, weapons_broken=0, armor_broken=0):
+                 enemies_defeated=0, bosses_defeated=0, weapons_broken=0, armor_broken=0, gold_earned=0):
     """Handle attack command"""
     # Increment attack count
     attack_count += 1
+    
+    # Create a dictionary to return updated statistics
+    updated_stats = {
+        'attack_count': attack_count,
+        'critical_hits': critical_hits,
+        'total_damage_dealt': total_damage_dealt,
+        'total_damage_taken': total_damage_taken,
+        'enemies_defeated': enemies_defeated,
+        'bosses_defeated': bosses_defeated,
+        'weapons_broken': weapons_broken,
+        'armor_broken': armor_broken,
+        'gold_earned': gold_earned,
+        'player_money': player_money
+    }
     
     if current_room.get("enemy"):
         enemies = current_room["enemy"]
@@ -150,9 +164,9 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                     print(f"  {i}. {spell_name} - {spell['mana_cost']} mana: {spell['description']}")
                 
                 try:
-                    choice = int(input("Enter number: ")) - 1
-                    if 0 <= choice < len(learned_spells):
-                        spell_name = learned_spells[choice]
+                    spell_choice = int(input("Enter number: ")) - 1
+                    if 0 <= spell_choice < len(learned_spells):
+                        spell_name = learned_spells[spell_choice]
                         spell = spells[spell_name]
                         
                         # Check mana
@@ -263,8 +277,10 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
             
             # Track enemy defeat statistics
             enemies_defeated += 1
+            updated_stats['enemies_defeated'] = enemies_defeated
             if target_enemy.get("is_boss"):
                 bosses_defeated += 1
+                updated_stats['bosses_defeated'] = bosses_defeated
             
             # Boss drops mysterious key for current floor
             if target_enemy.get("is_boss"):
@@ -276,9 +292,20 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
             else:
                 # Regular enemy drops money (but not training dummy)
                 if not target_enemy.get("is_training_dummy"):
-                    money_drop = random.randint(5, 15)
+                    # Reduce gold for swarms (multiple enemies)
+                    base_gold = random.randint(5, 15)
+                    if len(enemies) > 1:
+                        # Swarm penalty: 3x less gold per enemy
+                        money_drop = max(1, base_gold // 3)
+                        print(f"You found {money_drop} gold!")
+                    else:
+                        money_drop = base_gold
+                        print(f"You found {money_drop} gold!")
+                    
                     player_money += money_drop
-                    print(f"You found {money_drop} gold!")
+                    gold_earned += money_drop
+                    updated_stats['gold_earned'] = gold_earned
+                    updated_stats['player_money'] = player_money
             
             # Remove defeated enemy from list
             enemies.pop(choice)
@@ -287,10 +314,19 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
             if not enemies:
                 current_room["enemy"] = None
                 print("All enemies have been defeated!")
-                return True
+                # Update final statistics before returning
+                updated_stats['attack_count'] = attack_count
+                updated_stats['total_damage_dealt'] = total_damage_dealt
+                updated_stats['total_damage_taken'] = total_damage_taken
+                updated_stats['player_money'] = player_money
+                return True, updated_stats
             else:
                 # Update room with remaining enemies
                 current_room["enemy"] = enemies
+                
+            # IMPORTANT: Don't process status effects on defeated enemies
+            # Return immediately to prevent the "dies from effects" bug
+            return True, updated_stats
         else:
             # Don't show HP remaining for training dummy
             if not target_enemy.get("is_training_dummy"):
@@ -324,22 +360,49 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                     discovered_enemies.add(target_enemy["name"])
                     print(f"{target_enemy['name']}'s File Unlocked!")
                 if not target_enemy.get("is_training_dummy"):
-                    money_drop = random.randint(5, 15)
+                    # Reduce gold for swarms (multiple enemies)
+                    base_gold = random.randint(5, 15)
+                    if len(enemies) > 1:
+                        # Swarm penalty: 3x less gold per enemy
+                        money_drop = max(1, base_gold // 3)
+                        print(f"You found {money_drop} gold!")
+                    else:
+                        money_drop = base_gold
+                        print(f"You found {money_drop} gold!")
+                    
                     player_money += money_drop
-                    print(f"You found {money_drop} gold!")
+                    gold_earned += money_drop
+                    updated_stats['gold_earned'] = gold_earned
+                    updated_stats['player_money'] = player_money
                 
                 # Remove defeated enemy from list
-                enemies.pop(choice)
+                # Find the correct index of this enemy in the current list
+                try:
+                    enemy_index = enemies.index(target_enemy)
+                    enemies.pop(enemy_index)
+                except ValueError:
+                    # Enemy not found in list (already removed), skip
+                    pass
                 
                 # Check if all enemies are defeated
                 if not enemies:
                     current_room["enemy"] = None
                     print("All enemies have been defeated!")
-                    return True
+                    # Update final statistics before returning
+                    updated_stats['attack_count'] = attack_count
+                    updated_stats['total_damage_dealt'] = total_damage_dealt
+                    updated_stats['total_damage_taken'] = total_damage_taken
+                    updated_stats['player_money'] = player_money
+                    return True, updated_stats
                 else:
                     # Update room with remaining enemies
                     current_room["enemy"] = enemies
-                return True
+                # Update final statistics before returning
+                updated_stats['attack_count'] = attack_count
+                updated_stats['total_damage_dealt'] = total_damage_dealt
+                updated_stats['total_damage_taken'] = total_damage_taken
+                updated_stats['player_money'] = player_money
+                return True, updated_stats
             
             # Enemy attack (unless stunned)
             if target_enemy.get("Stunned"):
@@ -385,7 +448,14 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
             print("The training dummy doesn't fight back.")
     else:
         print("There's no enemy here to attack.")
-    return True
+    
+    # Update final statistics before returning
+    updated_stats['attack_count'] = attack_count
+    updated_stats['total_damage_dealt'] = total_damage_dealt
+    updated_stats['total_damage_taken'] = total_damage_taken
+    updated_stats['player_money'] = player_money
+    
+    return True, updated_stats
 
 def handle_take(current_room, inventory, armor_inventory, MAX_WEAPONS, MAX_ARMOR, mysterious_keys, golden_keys):
     """Handle take command for weapons, armor, and keys"""

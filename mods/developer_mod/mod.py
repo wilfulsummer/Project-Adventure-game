@@ -59,17 +59,22 @@ def ask_permission():
     print("\n=== DEVELOPER MOD DETECTED ===")
     print("This mod provides developer tools for testing and development.")
     print("It includes commands for teleportation, stat manipulation, and more.")
+    print("Note: You can also enable it later with 'dev_enable' command")
     
-    while True:
-        response = input("Enable developer mode? (yes/no): ").lower().strip()
-        if response in ['yes', 'y']:
-            print("Developer mode ENABLED!")
-            return True
-        elif response in ['no', 'n']:
-            print("Developer mode DISABLED.")
-            return False
-        else:
-            print("Please answer 'yes' or 'no'.")
+    try:
+        while True:
+            response = input("Enable developer mode? (yes/no): ").lower().strip()
+            if response in ['yes', 'y']:
+                print("Developer mode ENABLED!")
+                return True
+            elif response in ['no', 'n']:
+                print("Developer mode DISABLED.")
+                return False
+            else:
+                print("Please answer 'yes' or 'no'.")
+    except (EOFError, KeyboardInterrupt):
+        print("Input interrupted. Developer mode DISABLED by default.")
+        return False
 
 # Developer commands
 def handle_dev_teleport(args):
@@ -307,6 +312,15 @@ def handle_dev_info(args):
     print("=============================")
     return True
 
+def handle_dev_enable(args):
+    """Enable developer mode"""
+    global developer_mode_enabled
+    developer_mode_enabled = True
+    save_developer_state(True)
+    print("Developer mode ENABLED!")
+    print("You can now use all developer commands.")
+    return True
+
 def handle_dev_disable(args):
     """Disable developer mode"""
     save_developer_state(False)
@@ -370,6 +384,11 @@ commands = {
         "description": "Show developer information (Developer only)",
         "function": "handle_dev_info"
     },
+    "dev_enable": {
+        "name": "dev_enable",
+        "description": "Enable developer mode (Developer only)",
+        "function": "handle_dev_enable"
+    },
     "dev_disable": {
         "name": "dev_disable",
         "description": "Disable developer mode (Developer only)",
@@ -399,6 +418,7 @@ def show_developer_guide():
     print("  dev_stats <stat> <value> - Modify player stats")
     print("  dev_weapon <name> <damage> <durability> - Create custom weapon")
     print("  dev_spawn <type> <name> - Spawn enemies, items, or equipment")
+    print("  dev_enable - Enable developer mode")
     print("  dev_disable - Disable developer mode")
     print("\nUsage Examples:")
     print("  dev_teleport 3 15 20     - Move to Floor 3, coordinates (15,20)")
@@ -473,6 +493,7 @@ admin_commands = {
     "dev_weapon": handle_dev_weapon,
     "dev_spawn": handle_dev_spawn,
     "dev_info": handle_dev_info,
+    "dev_enable": handle_dev_enable,
     "dev_disable": handle_dev_disable,
     "dev_reload": handle_dev_reload,
     "dev_auto_reload": handle_dev_auto_reload

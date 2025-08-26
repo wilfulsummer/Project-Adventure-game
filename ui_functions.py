@@ -132,26 +132,32 @@ def show_room(current_room, player_floor, player_x, player_y, inventory, player_
         e = current_room["enemy"]
         
         # Handle both single enemies (dict) and enemy lists (spider swarms)
-        if isinstance(e, list):
+        if isinstance(e, list) and len(e) > 0:
             # Spider swarm or multiple enemies
             if len(e) == 1:
                 # Single enemy remaining in swarm
                 enemy = e[0]
-                tag = " [BOSS]" if enemy.get("is_boss") else ""
-                if enemy.get("is_training_dummy"):
-                    tag = " [TRAINING]"
-                    if "Training Dummy" not in discovered_enemies:
-                        print(f"Enemy here: {enemy['name']}{tag} (HP: ???)")
+                if isinstance(enemy, dict) and enemy.get("name"):
+                    tag = " [BOSS]" if enemy.get("is_boss") else ""
+                    if enemy.get("is_training_dummy"):
+                        tag = " [TRAINING]"
+                        if "Training Dummy" not in discovered_enemies:
+                            print(f"Enemy here: {enemy['name']}{tag} (HP: ???)")
+                        else:
+                            print(f"Enemy here: {enemy['name']}{tag} (HP: {enemy.get('hp', '???')})")
                     else:
-                        print(f"Enemy here: {enemy['name']}{tag} (HP: {enemy['hp']})")
+                        print(f"Enemy here: {enemy['name']}{tag} (HP: {enemy.get('hp', '???')})")
                 else:
-                    print(f"Enemy here: {enemy['name']}{tag} (HP: {enemy['hp']})")
+                    print("Enemy here: Unknown enemy")
             else:
                 # Multiple enemies in swarm
                 print(f"Enemies here: {len(e)} spiders")
                 for i, enemy in enumerate(e, 1):
-                    print(f"  {i}. {enemy['name']} (HP: {enemy['hp']})")
-        else:
+                    if isinstance(enemy, dict) and enemy.get("name"):
+                        print(f"  {i}. {enemy['name']} (HP: {enemy.get('hp', '???')})")
+                    else:
+                        print(f"  {i}. Unknown enemy")
+        elif isinstance(e, dict) and e.get("name"):
             # Single enemy (dictionary)
             tag = " [BOSS]" if e.get("is_boss") else ""
             if e.get("is_training_dummy"):
@@ -160,9 +166,12 @@ def show_room(current_room, player_floor, player_x, player_y, inventory, player_
                 if "Training Dummy" not in discovered_enemies:
                     print(f"Enemy here: {e['name']}{tag} (HP: ???)")
                 else:
-                    print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
+                    print(f"Enemy here: {e['name']}{tag} (HP: {e.get('hp', '???')})")
             else:
-                print(f"Enemy here: {e['name']}{tag} (HP: {e['hp']})")
+                print(f"Enemy here: {e['name']}{tag} (HP: {e.get('hp', '???')})")
+        else:
+            # Fallback for malformed enemy data
+            print("Enemy here: Unknown enemy")
 
     if current_room.get("weapons"):
         print("Weapons here:")
@@ -188,10 +197,10 @@ def show_room(current_room, player_floor, player_x, player_y, inventory, player_
 
     if current_room.get("shop"):
         shop = current_room["shop"]
-    if shop.get("is_blacksmith"):
-      print("This is a blacksmith's forge. Type 'buy' to see what's for sale and repair services.")
-    else:
-      print("This is a shop. Type 'buy' to see what's for sale.")
+        if shop.get("is_blacksmith"):
+            print("This is a blacksmith's forge. Type 'buy' to see what's for sale and repair services.")
+        else:
+            print("This is a shop. Type 'buy' to see what's for sale.")
 
     print("\nType 'guide' to see a list of commands.")
 

@@ -280,20 +280,26 @@ class ModLoader:
             for guide_name, guide_data in mod_module.guides.items():
                 self.mod_data['guides'][f"{mod_name}.{guide_name}"] = guide_data
         
-        # Auto-load guide files from mod directory
-        self.load_mod_guide_files(mod_name)
+        # Check if this is a development-only mod
+        is_development_only = getattr(mod_module, 'development_only', False)
         
-        # Auto-load weapon files from mod directory
-        self.load_mod_weapon_files(mod_name)
-        
-        # Auto-load enemy files from mod directory
-        self.load_mod_enemy_files(mod_name)
-        
-        # Auto-load armor files from mod directory
-        self.load_mod_armor_files(mod_name)
-        
-        # Auto-load mod configuration files
-        self.load_mod_config_files(mod_name)
+        if is_development_only:
+            print(f"Mod '{mod_name}' is development-only - skipping auto-loading of content")
+        else:
+            # Auto-load guide files from mod directory
+            self.load_mod_guide_files(mod_name)
+            
+            # Auto-load weapon files from mod directory
+            self.load_mod_weapon_files(mod_name)
+            
+            # Auto-load enemy files from mod directory
+            self.load_mod_enemy_files(mod_name)
+            
+            # Auto-load armor files from mod directory
+            self.load_mod_armor_files(mod_name)
+            
+            # Auto-load mod configuration files
+            self.load_mod_config_files(mod_name)
     
     def load_mod_guide_files(self, mod_name: str):
         """Automatically load guide files from mod directory for easy guide creation"""

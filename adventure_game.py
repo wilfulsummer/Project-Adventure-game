@@ -587,14 +587,6 @@ def create_room(floor, x, y):
       elif unique_item.get("type") == "armor":
         armors.append(unique_item)
   
-  # Mysterious key (1 in 50 chance)
-  mysterious_key_item = None
-  if random.randint(1, 50) == 1:
-    mysterious_key_item = {
-      "floor": floor,
-      "name": f"Mysterious Key (Floor {floor})"
-    }
-  
   enemy = create_enemy(x, y) if random.random() < 0.5 else None
   return {
     "description": random.choice(room_descriptions),
@@ -605,7 +597,7 @@ def create_room(floor, x, y):
     "shop": None,
     "chest": None,
     "crystal_type": None,  # Crystals only spawn in special crystal rooms
-    "mysterious_key": mysterious_key_item
+    "mysterious_key": None  # Mysterious keys only spawn in troll boss treasure rooms
   }
 
 def get_room(floor, x, y):

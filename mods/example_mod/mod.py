@@ -13,6 +13,9 @@ version = "1.0.0"
 author = "Example Modder"
 description = "An example mod that adds new content to the game"
 
+# Development flag - prevents auto-loading content into main game
+development_only = True
+
 # Import the modding system
 from mods.mod_loader import *
 

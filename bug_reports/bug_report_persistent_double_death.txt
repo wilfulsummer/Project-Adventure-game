@@ -1,0 +1,48 @@
+Bug Report: Persistent Double Enemy Death Bug - Status Effect Logic Issue
+Date: 2025-01-21
+Status: RESOLVED
+
+ISSUE DESCRIPTION:
+Despite fixing the enemies.pop() index issue, the double enemy death bug persisted. The combat log still showed:
+1. "You defeated the Spider!" (from direct attack)
+2. "The Spider dies from the effects!" (second spider dying mysteriously)
+
+This indicated a deeper issue in the combat logic beyond just the enemy removal indexing.
+
+STEPS TO REPRODUCE:
+1. Find a room with multiple enemies (spider swarm)
+2. Attack one enemy with a weapon
+3. See multiple enemies die and multiple gold drops
+4. Combat log shows "dies from the effects" message even after previous fix
+
+ROOT CAUSE:
+The issue was in the combat flow logic. After an enemy dies from a direct attack:
+1. Enemy is removed from the list with enemies.pop(choice)
+2. Room state is updated
+3. BUT the function continues to process status effects on the defeated enemy
+4. This creates a "ghost enemy" scenario where status effects run on removed enemies
+5. The status effect logic somehow affects the remaining enemies, causing the "dies from effects" message
+
+The problem was that target_enemy remained a reference to the removed enemy object, and the status effect processing was running on this invalid reference.
+
+SOLUTION IMPLEMENTED:
+Simplified the combat logic by adding an immediate return after processing a defeated enemy:
+
+```python
+# IMPORTANT: Don't process status effects on defeated enemies
+# Return immediately to prevent the "dies from effects" bug
+return True, updated_stats
+```
+
+This prevents the function from continuing to process status effects on defeated enemies, eliminating the source of the double death bug.
+
+FILES MODIFIED:
+- command_handlers.py: Added early return to prevent status effect processing on defeated enemies
+
+TESTING:
+- Syntax check passed
+- Import test passed
+- Combat should now work correctly with single enemy deaths per attack
+
+LESSON LEARNED:
+When fixing complex bugs, sometimes the root cause is deeper than initially apparent. It's important to trace the complete execution flow and identify where the logic continues to run on invalid objects. Early returns can be an effective way to prevent complex state corruption.
