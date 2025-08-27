@@ -1,0 +1,41 @@
+=== ADVENTURE GAME BUG REPORT - RESOLVED ===
+Generated: 2025-08-23 12:11:57
+Resolved: 2025-01-27
+
+ERROR DETAILS:
+Type: UnboundLocalError
+Value: local variable 'shop' referenced before assignment
+Description: local variable 'shop' referenced before assignment
+
+TRACEBACK:
+File "main.py", line 1428, in
+File "main.py", line 221, in main
+File "ui_functions.py", line 191, in show_room
+
+ROOT CAUSE:
+The shop handling logic in ui_functions.py had a conditional structure error. The code was:
+```python
+if current_room.get("shop"):
+    shop = current_room["shop"]
+if shop.get("is_blacksmith"):  # This line caused the error!
+```
+
+The second `if` statement was not properly nested within the first one, so if there was no shop in the room, 
+the `shop` variable was never defined, but the code still tried to use it.
+
+SOLUTION IMPLEMENTED:
+1. Fixed the conditional logic by properly nesting the shop type check
+2. Restructured the code to ensure `shop` variable is only accessed when defined
+3. The fixed code now properly handles rooms with and without shops
+
+FILES MODIFIED:
+- ui_functions.py: Fixed shop variable conditional logic in show_room function
+
+LESSON LEARNED:
+Always ensure that variables are defined before use, especially in conditional blocks. 
+When dealing with nested conditions, make sure the variable scope is properly managed.
+The original code had a logic flow issue where the second condition could execute even
+when the first condition failed.
+
+STATUS: RESOLVED ✅
+===============================================

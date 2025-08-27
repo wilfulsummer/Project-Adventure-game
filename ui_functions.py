@@ -176,12 +176,13 @@ def show_room(current_room, player_floor, player_x, player_y, inventory, player_
     if current_room.get("weapons"):
         print("Weapons here:")
         for i, w in enumerate(current_room["weapons"], 1):
+            max_durability = w.get("max_durability", w["durability"] + 5)
             if w.get("name") == "Spell Book":
-                print(f"  {i}. {w['name']} (Damage: ???, Durability: {w['durability']})")
+                print(f"  {i}. {w['name']} (Damage: ???, Durability: {w['durability']}/{max_durability})")
             elif w.get("requires_mana"):
-                print(f"  {i}. {w['name']} (Damage: {w['damage']}, Durability: {w['durability']}, Mana Cost: {w.get('mana_cost', 10)})")
+                print(f"  {i}. {w['name']} (Damage: {w['damage']}, Durability: {w['durability']}/{max_durability}, Mana Cost: {w.get('mana_cost', 10)})")
             else:
-                print(f"  {i}. {w['name']} (Damage: {w['damage']}, Durability: {w['durability']})")
+                print(f"  {i}. {w['name']} (Damage: {w['damage']}, Durability: {w['durability']}/{max_durability})")
 
     if current_room.get("armors"):
         print("Armor here:")
@@ -244,6 +245,12 @@ def show_bestiary(discovered_enemies):
                 health_desc = "High Health, Tough Opponent"
             elif enemy_name == "Spider":
                 health_desc = "Very Low Health, Swarm Enemy"
+            elif enemy_name == "Skeleton":
+                health_desc = "Low Health, Glass Cannon (High Damage) - Floor 2 Enemy"
+            elif enemy_name == "Zombie":
+                health_desc = "Very High Health, Tank (Low Damage)"
+            elif enemy_name == "Vampire":
+                health_desc = "Very High Health, Life Steal (60% of damage)"
             
             print(f"  🐺 {enemy_name}: {base_hp} HP - {health_desc}")
         
@@ -285,6 +292,12 @@ def show_bestiary(discovered_enemies):
                     health_desc = "High Health, Tough Opponent"
                 elif enemy_name == "Spider":
                     health_desc = "Very Low Health, Swarm Enemy"
+                elif enemy_name == "Skeleton":
+                    health_desc = "Low Health, Glass Cannon (High Damage) - Floor 2 Enemy"
+                elif enemy_name == "Zombie":
+                    health_desc = "Very High Health, Tank (Low Damage)"
+                elif enemy_name == "Vampire":
+                    health_desc = "Very High Health, Life Steal (60% of damage)"
                 
                 print(f"  🐺 {enemy_name}: {base_hp} HP - {health_desc}")
             elif enemy_name == "Training Dummy":
@@ -301,6 +314,9 @@ def show_bestiary(discovered_enemies):
     print("  - Orcs: Tough opponents, use your best weapons")
     print("  - Rats: Attack twice per turn but deal reduced damage")
     print("  - Spiders: Attack in swarms of 2-4, very low damage")
+    print("  - Skeletons: Floor 2 glass cannons - kill quickly before they deal massive damage")
+    print("  - Zombies: High HP tanks - focus on survival, they deal little damage")
+    print("  - Vampires: High HP life steal - defeat quickly to prevent healing, very durable")
     
     if developer_mode:
         print("  - Baby Dragons: Floor 2 boss, tougher than Trolls but drop valuable scales")
@@ -445,6 +461,7 @@ def show_utility_help():
     """Display utility command help"""
     print("\n=== UTILITY HELP ===")
     print("Commands:")
+    print("  inspect - Examine rooms, items, weapons, armor, and enemies")
     print("  map - Show map and waypoints")
     print("  waypoint - Manage waypoints (add, view, delete, teleport)")
     print("  bestiary - Show information about enemies")
@@ -485,7 +502,7 @@ def show_all_help():
     print("Progression:")
     print("  open, loot, buy, repair")
     print("Utility:")
-    print("  map, waypoint, bestiary, level, stats, save, load, saves, delete_save, bug_report, guide, quit")
+    print("  inspect, map, waypoint, bestiary, level, stats, save, load, saves, delete_save, bug_report, guide, quit")
     print("==================")
 
 def show_developer_help():

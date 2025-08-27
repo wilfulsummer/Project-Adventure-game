@@ -60,10 +60,11 @@ spells = {
 
 enemy_stats = {
     "Goblin": 12,
-    "Skeleton": 14,
-    "Zombie": 18,
+    "Skeleton": 16,  # Glass cannon: Floor 2 enemy, higher HP but still glass cannon
+    "Zombie": 25,  # High HP, low damage
     "Orc": 20,
     "Rat": 8,
     "Hungry Wolf": 10,
-    "Spider": 6
+    "Spider": 6,
+    "Vampire": 35  # Life steal enemy: high HP for sustainability
 } 

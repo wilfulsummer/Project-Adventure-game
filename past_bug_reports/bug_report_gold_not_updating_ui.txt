@@ -1,0 +1,37 @@
+Bug Report: Gold Not Updating in Player Status Display
+Date: 2025-01-21
+Status: RESOLVED
+
+ISSUE DESCRIPTION:
+When players defeat enemies and earn gold, the gold is found and added to player_money in the combat system, but the player's status display still shows the old gold amount. The message "You found X gold!" appears, but the PLAYER STATUS section shows the previous gold value.
+
+STEPS TO REPRODUCE:
+1. Start a new game or load existing save
+2. Find an enemy to attack
+3. Defeat the enemy
+4. See "You found X gold!" message
+5. Check PLAYER STATUS - Gold still shows old value
+
+ROOT CAUSE:
+The handle_attack function in command_handlers.py was updating player_money locally and adding it to updated_stats['gold_earned'], but was missing updated_stats['player_money'] = player_money in several key places:
+1. When enemies drop gold normally
+2. When enemies die from status effects
+3. In multiple return statements
+
+The main.py was correctly unpacking the returned values, but the command_handlers.py wasn't passing back the updated player_money value.
+
+SOLUTION IMPLEMENTED:
+1. Added updated_stats['player_money'] = player_money after every gold drop
+2. Updated all return statements in handle_attack to include the current player_money
+3. Ensured both gold_earned and player_money are properly tracked and returned
+
+FILES MODIFIED:
+- command_handlers.py: Added player_money updates to all gold drop locations and return statements
+
+TESTING:
+- Syntax check passed
+- Import test passed
+- Gold should now properly update in player status display after combat
+
+LESSON LEARNED:
+When returning multiple statistics from functions, ensure ALL relevant values are included in the returned data structure. The gold tracking was working (gold_earned), but the UI display value (player_money) was missing from the returned stats.

@@ -198,7 +198,8 @@ def create_chest_weapon(dist):
             crit_chance = 0.05  # Base 5% crit chance
             crit_damage = 2.0   # Base 2x crit damage
         
-            durability = 0 if is_broken else (base_durability + durability_bonus)
+        durability = 0 if is_broken else (base_durability + durability_bonus)
+    
     # Max durability scales 1.25x more than regular durability with some RNG
     max_durability_bonus = int((durability_bonus * 1.25) + random.randint(2, 6))  # 1.25x scaling + 2-6 RNG
     max_durability = durability + max_durability_bonus
@@ -238,7 +239,7 @@ def create_chest_armor(x, y):
         "max_durability": max_durability
     }
 
-def create_enemy(x, y, force_boss=None):
+def create_enemy(x, y, force_boss=None, force_enemy=None):
     dist = distance_from_start(x, y)
     # Cap scaling at 100 rooms away from (0,0)
     capped_dist = min(dist, 100)
@@ -266,9 +267,15 @@ def create_enemy(x, y, force_boss=None):
             "is_boss": True
         }
 
-    name = random.choice(list(enemy_stats.keys()))
-    base_hp = enemy_stats[name]
-    variation = random.randint(-3, 3)
+    # Force specific enemy type if requested
+    if force_enemy:
+        name = force_enemy
+        base_hp = enemy_stats[name]
+        variation = random.randint(-3, 3)
+    else:
+        name = random.choice(list(enemy_stats.keys()))
+        base_hp = enemy_stats[name]
+        variation = random.randint(-3, 3)
     
     # Create enemy with base stats
     enemy = {
@@ -287,6 +294,21 @@ def create_enemy(x, y, force_boss=None):
     # Special handling for spiders: very low damage
     if name == "Spider":
         enemy["base_attack"] = 2 + scaled  # Very low base damage that scales
+    
+    # Special handling for skeletons: glass cannons (low HP, high damage)
+    if name == "Skeleton":
+        enemy["base_attack"] = int((enemy["base_attack"] + scaled) * 1.8)  # 80% damage increase
+        enemy["is_glass_cannon"] = True  # Mark as glass cannon for UI
+    
+    # Special handling for zombies: high HP, low damage
+    if name == "Zombie":
+        enemy["base_attack"] = int(enemy["base_attack"] * 0.6)  # 40% damage reduction
+        enemy["is_tank"] = True  # Mark as tank for UI
+    
+    # Special handling for vampires: life steal mechanic
+    if name == "Vampire":
+        enemy["life_steal_ratio"] = 0.6  # 60% of damage dealt is converted to healing
+        enemy["is_vampire"] = True  # Mark as vampire for UI
     
     return enemy
 
@@ -386,10 +408,21 @@ def create_room(floor, x, y, learned_spells):
 
     # Shop (10% chance)
     if random.random() < 0.1:
+        # 35% chance for discount shop
+        is_discount_shop = random.random() < 0.35
+        discount_multiplier = 0.875 if is_discount_shop else 1.0  # 7.5-12.5% discount (average 10%)
+        
+        # Blacksmith shops only appear on Floor 2 (Baby Dragon floor)
+        is_blacksmith = floor == 2 and random.random() < 0.6  # 60% chance on Floor 2, 0% on other floors
+        
         items = []
         for _ in range(random.randint(0, 2)):
             base = create_weapon(x, y)
             bonus = random.randint(1, 3)
+            
+            # Blacksmiths don't sell magic weapons or bows
+            if is_blacksmith and (base["name"] in ["Spell Book", "Magic Staff", "Bow"]):
+                continue  # Skip this weapon for blacksmith shops
             
             # Handle Spell Book damage (which is "???")
             if base["name"] == "Spell Book":
@@ -405,8 +438,9 @@ def create_room(floor, x, y, learned_spells):
             })
         
         # Generate spell scrolls (40% chance, then 30% chance for 2 different spells)
+        # Blacksmiths don't sell spell scrolls
         spell_scrolls_shop = {}
-        if random.random() < 0.4:
+        if not is_blacksmith and random.random() < 0.4:
             available_spells = [spell for spell in spells.keys() if spell not in learned_spells]
             if available_spells:
                 spell1 = random.choice(available_spells)
@@ -414,13 +448,6 @@ def create_room(floor, x, y, learned_spells):
                 if random.random() < 0.3 and len(available_spells) > 1:
                     spell2 = random.choice([s for s in available_spells if s != spell1])
                     spell_scrolls_shop[spell2] = 1
-        
-        # 35% chance for discount shop
-        is_discount_shop = random.random() < 0.35
-        discount_multiplier = 0.875 if is_discount_shop else 1.0  # 7.5-12.5% discount (average 10%)
-        
-        # 30% chance for blacksmith shop (when shop is generated)
-        is_blacksmith = random.random() < 0.3
         
         shop = {
             "items": items,
@@ -431,14 +458,14 @@ def create_room(floor, x, y, learned_spells):
             "armor": create_armor(x, y) if random.random() < 0.35 else None,
             "life_crystal": random.random() < 0.1,
             "health_potions": random.randint(2, 4),  # Always have health potions
-            "stamina_potions": random.randint(1, 2) if random.random() < 0.6 else 0,
-            "mana_potions": random.randint(1, 2) if random.random() < 0.6 else 0,
+            "stamina_potions": random.randint(1, 2) if random.random() < 0.6 and not is_blacksmith else 0,  # Blacksmiths don't sell stamina potions
+            "mana_potions": random.randint(1, 2) if random.random() < 0.6 and not is_blacksmith else 0,  # Blacksmiths don't sell mana potions
             "waypoint_scrolls": random.randint(1, 2) if random.random() < 0.3 else 0,
             "waypoint_scroll_price": int(random.randint(25, 35) * discount_multiplier),
             "spell_scrolls": spell_scrolls_shop,
             "is_discount_shop": is_discount_shop,
             "is_blacksmith": is_blacksmith,
-            "repair_price": int(1 * discount_multiplier) if is_blacksmith else None,  # Cost per durability point (1 gold base)
+            "repair_price": 1 if is_blacksmith else None,  # Blacksmiths always charge 1 gold per durability point
             "repair_bonus": random.randint(1, 3) if is_blacksmith else 0  # Extra durability restored
         }
         
@@ -473,6 +500,49 @@ def create_room(floor, x, y, learned_spells):
             "enemy": None,
             "weapons": [],
             "armors": [],
+            "chest": None,
+            "life_crystal": False
+        }
+
+    # Graveyard room (Floor 2 only, 1 in 20 chance) - spawns zombies, possible skeleton and vampire
+    if floor == 2 and random.randint(1, 20) == 1:
+        # Always spawn 2-3 zombies
+        zombie_count = random.randint(2, 3)
+        zombies = []
+        for _ in range(zombie_count):
+            zombies.append(create_enemy(x, y, force_enemy="Zombie"))
+        
+        # 45% chance for skeleton
+        skeleton = None
+        if random.random() < 0.45:
+            skeleton = create_enemy(x, y, force_enemy="Skeleton")
+            zombies.append(skeleton)
+        
+        # 45% chance for vampire (can spawn alongside skeleton)
+        vampire = None
+        if random.random() < 0.45:
+            vampire = create_enemy(x, y, force_enemy="Vampire")
+            zombies.append(vampire)
+        
+        # Check if there are dead characters on this floor
+        try:
+            from save_load import has_dead_characters_on_floor
+            has_dead = has_dead_characters_on_floor(floor)
+        except:
+            has_dead = False
+        
+        if has_dead:
+            description = "A dark graveyard filled with ancient tombstones. There are a lot of graves with names that seem familiar for some reason... The air is thick with the stench of decay and the ground seems to move beneath your feet..."
+        else:
+            description = "A dark graveyard filled with ancient tombstones. The air is thick with the stench of decay and the ground seems to move beneath your feet..."
+        
+        return {
+            "description": description,
+            "type": "graveyard",
+            "enemy": zombies,
+            "weapons": [],
+            "armors": [],
+            "shop": None,
             "chest": None,
             "life_crystal": False
         }

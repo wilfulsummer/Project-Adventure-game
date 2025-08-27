@@ -433,6 +433,14 @@ def handle_attack(current_room, inventory, player_mana, equipped_armor, player_h
                     player_hp -= enemy_damage
                     total_damage_taken += enemy_damage
                     
+                    # Vampire life steal mechanic
+                    if target_enemy.get("is_vampire") and target_enemy.get("life_steal_ratio"):
+                        life_steal_amount = int(enemy_damage * target_enemy["life_steal_ratio"])
+                        target_enemy["hp"] = min(target_enemy["hp"] + life_steal_amount, target_enemy.get("max_hp", target_enemy["hp"] + life_steal_amount))
+                        print(f"The {target_enemy['name']} drains {life_steal_amount} HP from you!")
+                        if target_enemy["hp"] > target_enemy.get("max_hp", target_enemy["hp"]):
+                            target_enemy["hp"] = target_enemy.get("max_hp", target_enemy["hp"])
+                    
                     # Show different messages for extra turns
                     if extra_turns > 1 and turn > 0:
                         print(f"The {target_enemy['name']} attacks again for {enemy_damage} damage!")
@@ -787,12 +795,13 @@ def handle_switch(inventory):
     print("  0. Fists (Damage: 4, Durability: Infinite)")
     for i, weapon in enumerate(inventory):
         status = " [BROKEN]" if weapon['durability'] <= 0 else ""
+        max_durability = weapon.get("max_durability", weapon["durability"] + 5)
         if weapon.get("name") == "Spell Book":
-            print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}){status}")
+            print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}/{max_durability}){status}")
         elif weapon.get("requires_mana"):
-            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)}){status}")
+            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability}, Mana Cost: {weapon.get('mana_cost', 10)}){status}")
         else:
-            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}){status}")
+            print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability}){status}")
     try:
         choice = int(input("Enter number: ")) - 1
         if choice == -1:
@@ -1295,12 +1304,13 @@ def handle_equipment(inventory, armor_inventory, equipped_armor, using_fists):
         print("  None (using fists)")
     else:
         for i, weapon in enumerate(inventory):
+            max_durability = weapon.get("max_durability", weapon["durability"] + 5)
             if weapon.get("name") == "Spell Book":
-                print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']})")
+                print(f"  {i+1}. {weapon['name']} (Damage: ???, Durability: {weapon['durability']}/{max_durability})")
             elif weapon.get("requires_mana"):
-                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}, Mana Cost: {weapon.get('mana_cost', 10)})")
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability}, Mana Cost: {weapon.get('mana_cost', 10)})")
             else:
-                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']})")
+                print(f"  {i+1}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability})")
     
     # Show armor section
     print("\nArmor:")
@@ -1326,4 +1336,80 @@ def handle_equipment(inventory, armor_inventory, equipped_armor, using_fists):
         print("  Armor: None")
     
     print("==================")
-    return True 
+    return True
+
+def handle_inspect(command_parts, current_room, inventory, armor_inventory):
+    """Handle inspect command for examining rooms, items, and other objects"""
+    if len(command_parts) < 2:
+        print("Usage: inspect <target>")
+        print("Available targets:")
+        print("  1. room - Examine the current room")
+        print("  2. items - Examine items in the room")
+        print("  3. weapons - Examine your weapons")
+        print("  4. armor - Examine your armor")
+        print("  5. enemy - Examine the enemy (if present)")
+        return True
+    
+    target = command_parts[1].lower()
+    
+    if target == "room" or target == "1":
+        print("It's a room.")
+        return True
+    
+    elif target == "items" or target == "2":
+        if not current_room.get("weapons") and not current_room.get("armors") and not current_room.get("mysterious_key"):
+            print("There are no items to inspect in this room.")
+        else:
+            print("Items in this room:")
+            if current_room.get("weapons"):
+                for i, weapon in enumerate(current_room["weapons"], 1):
+                    max_durability = weapon.get("max_durability", weapon["durability"] + 5)
+                    print(f"  {i}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability})")
+            if current_room.get("armors"):
+                for i, armor in enumerate(current_room["armors"], 1):
+                    print(f"  {i}. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']})")
+            if current_room.get("mysterious_key"):
+                print(f"  Mysterious Key (Floor {current_room['mysterious_key']['floor']})")
+        return True
+    
+    elif target == "weapons" or target == "3":
+        if not inventory:
+            print("You have no weapons to inspect.")
+        else:
+            print("Your weapons:")
+            for i, weapon in enumerate(inventory, 1):
+                max_durability = weapon.get("max_durability", weapon["durability"] + 5)
+                if weapon.get("requires_mana"):
+                    print(f"  {i}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability}, Mana Cost: {weapon.get('mana_cost', 10)})")
+                else:
+                    print(f"  {i}. {weapon['name']} (Damage: {weapon['damage']}, Durability: {weapon['durability']}/{max_durability})")
+        return True
+    
+    elif target == "armor" or target == "4":
+        if not armor_inventory:
+            print("You have no armor to inspect.")
+        else:
+            print("Your armor:")
+            for i, armor in enumerate(armor_inventory, 1):
+                equipped_tag = " [EQUIPPED]" if armor.get("is_equipped") else ""
+                print(f"  {i}. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}){equipped_tag}")
+        return True
+    
+    elif target == "enemy" or target == "5":
+        if not current_room.get("enemy"):
+            print("There is no enemy in this room to inspect.")
+        else:
+            enemy = current_room["enemy"]
+            if isinstance(enemy, list):
+                print("Enemies in this room:")
+                for i, e in enumerate(enemy, 1):
+                    print(f"  {i}. {e['name']} - HP: {e['hp']}")
+            else:
+                print(f"Enemy: {enemy['name']} - HP: {enemy['hp']}")
+        return True
+    
+    else:
+        print(f"Unknown inspection target: {target}")
+        print("Available targets: room, items, weapons, armor, enemy")
+        print("Or use numbers: 1, 2, 3, 4, 5")
+        return True 

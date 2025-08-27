@@ -1,0 +1,70 @@
+=== ADVENTURE GAME BUG REPORT - RESOLVED ===
+Generated: 2025-08-23 14:30:00
+Resolved: 2025-08-23 14:35:00
+
+ERROR DETAILS:
+Type: Gold Tracking Bug
+Value: Player money not updating after defeating enemies
+Description: When defeating enemies, the game reports finding gold but the player's gold count in the status display remains at 0
+
+TRACEBACK:
+File "main.py", line 723, in handle_attack call
+File "command_handlers.py", line 294, in gold drop logic
+File "command_handlers.py", line 348, in gold drop logic
+
+ROOT CAUSE:
+The issue was in the data flow between `command_handlers.py` and `main.py`. While the `handle_attack` function was correctly updating the local `player_money` parameter and printing "You found X gold!", this updated value was not being passed back to the global `player_money` variable in `main.py`.
+
+The problem occurred because:
+1. `handle_attack` received `player_money` as a parameter
+2. It updated the local copy when enemies dropped gold
+3. It returned `updated_stats` dictionary with various statistics
+4. However, `player_money` was NOT included in the `updated_stats` dictionary
+5. `main.py` received the returned statistics but had no way to update the global `player_money`
+
+SOLUTION IMPLEMENTED:
+1. **Modified `command_handlers.py`**: Added `'player_money': player_money` to the `updated_stats` dictionary in the `handle_attack` function
+2. **Modified `main.py`**: Added `player_money = updated_stats['player_money']` to update the global variable when unpacking the returned statistics
+
+Code changes:
+```python
+# command_handlers.py - Added player_money to updated_stats
+updated_stats = {
+    'attack_count': attack_count,
+    'critical_hits': critical_hits,
+    'total_damage_dealt': total_damage_dealt,
+    'total_damage_taken': total_damage_taken,
+    'enemies_defeated': enemies_defeated,
+    'bosses_defeated': bosses_defeated,
+    'weapons_broken': weapons_broken,
+    'armor_broken': armor_broken,
+    'gold_earned': gold_earned,
+    'player_money': player_money  # ← Added this line
+}
+
+# main.py - Added player_money update
+if isinstance(result, tuple):
+    success, updated_stats = result
+    # Update global statistics with returned values
+    attack_count = updated_stats['attack_count']
+    critical_hits = updated_stats['critical_hits']
+    total_damage_dealt = updated_stats['total_damage_dealt']
+    total_damage_taken = updated_stats['total_damage_taken']
+    enemies_defeated = updated_stats['enemies_defeated']
+    bosses_defeated = updated_stats['bosses_defeated']
+    weapons_broken = updated_stats['weapons_broken']
+    armor_broken = updated_stats['armor_broken']
+    gold_earned = updated_stats['gold_earned']
+    player_money = updated_stats['player_money']  # ← Added this line
+```
+
+LESSON LEARNED:
+When functions modify multiple global variables, ensure ALL modified values are included in the return data structure. The previous fix only addressed the `gold_earned` statistic but missed the actual `player_money` currency that players see in their status display.
+
+This highlights the importance of:
+1. **Complete data flow**: All modified values must be returned and updated
+2. **Consistent return patterns**: Use the same return structure for all code paths
+3. **Testing user-facing elements**: Verify that UI displays reflect actual game state changes
+
+STATUS: ✅ RESOLVED
+The gold tracking system now works correctly. When players defeat enemies, they will see both the "You found X gold!" message AND their gold count will properly update in the player status display.

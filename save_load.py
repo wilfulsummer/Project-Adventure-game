@@ -17,6 +17,7 @@ SAVE_DEFAULTS = {
     "mana_potions": 0,
     "waypoint_scrolls": 1,
     "golden_keys": 0,
+    "living": True,  # Character status: True = alive, False = dead
     
     # Leveling system
     "player_level": 1,
@@ -40,8 +41,8 @@ SAVE_DEFAULTS = {
     
     # Collections and flags
     "inventory": [],
-    "armor_inventory": [],
-    "equipped_armor": None,
+    "armor_inventory": [],  
+    "equipped_armor": None,     
     "mysterious_keys": {},
     "unlocked_floors": [],
     "waypoints": {},
@@ -52,7 +53,15 @@ SAVE_DEFAULTS = {
     "discovered_uniques": {},
     "materials_inventory": {},
     "floors_visited": [],
-    "has_viewed_mechanics": False
+    "has_viewed_mechanics": False,
+    
+    # Graveyard system defaults
+    "death_floor": None,
+    "death_x": None,
+    "death_y": None,
+    "death_timestamp": None,
+    "times_died": 0,
+    "last_death_date": None
 }
 
 def get_save_field_with_default(data, field_name, default_value=None):
@@ -94,10 +103,110 @@ def ensure_armor_max_durability(armors):
 SAVE_DIR = "saves"
 DEFAULT_SAVE = "savegame.json"
 
+# Directory for dead characters (graveyard)
+GRAVEYARD_DIR = "graveyard"
+
 def ensure_save_directory():
     """Ensure the saves directory exists"""
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
+
+def ensure_graveyard_directory():
+    """Ensure the graveyard directory exists"""
+    if not os.path.exists(GRAVEYARD_DIR):
+        os.makedirs(GRAVEYARD_DIR)
+
+def save_dead_character(character_data, death_floor, death_x, death_y):
+    """Save a dead character to the graveyard with death location"""
+    ensure_graveyard_directory()
+    
+    # Check if this character has died before (by checking if they have a graveyard file)
+    character_id = character_data.get("character_id")
+    existing_file = None
+    
+    if character_id:
+        # Look for existing graveyard file for this character
+        for filename in os.listdir(GRAVEYARD_DIR):
+            if filename.endswith('.json'):
+                try:
+                    with open(os.path.join(GRAVEYARD_DIR, filename), 'r') as f:
+                        existing_char = json.load(f)
+                        if existing_char.get("character_id") == character_id:
+                            existing_file = filename
+                            break
+                except:
+                    continue
+    
+    # Create a unique filename for the dead character
+    import time
+    timestamp = int(time.time())
+    current_date = time.strftime("%Y-%m-%d")
+    
+    if existing_file:
+        # Character has died before - overwrite existing file
+        character_name = existing_file.replace('.json', '')
+        print(f"Character has died again - updating death record...")
+    else:
+        # First death - create new file
+        character_name = f"character_{timestamp}"
+    
+    # Add death information to character data
+    dead_character = character_data.copy()
+    dead_character["living"] = False
+    dead_character["death_floor"] = death_floor
+    dead_character["death_x"] = death_x
+    dead_character["death_y"] = death_y
+    dead_character["death_timestamp"] = timestamp
+    dead_character["last_death_date"] = current_date
+    
+    # Increment death counter
+    dead_character["times_died"] = dead_character.get("times_died", 0) + 1
+    
+    # Save to graveyard (overwrite if existing)
+    graveyard_file = os.path.join(GRAVEYARD_DIR, f"{character_name}.json")
+    try:
+        with open(graveyard_file, 'w') as f:
+            json.dump(dead_character, f, indent=2)
+        return character_name
+    except Exception as e:
+        print(f"Failed to save dead character to graveyard: {e}")
+        return None
+
+def get_dead_characters():
+    """Get list of all dead characters in the graveyard"""
+    ensure_graveyard_directory()
+    
+    dead_characters = []
+    if os.path.exists(GRAVEYARD_DIR):
+        for filename in os.listdir(GRAVEYARD_DIR):
+            if filename.endswith('.json'):
+                try:
+                    with open(os.path.join(GRAVEYARD_DIR, filename), 'r') as f:
+                        character_data = json.load(f)
+                        if not character_data.get("living", True):  # Only get dead characters
+                            dead_characters.append(character_data)
+                except Exception as e:
+                    print(f"Failed to load dead character {filename}: {e}")
+    
+    return dead_characters
+
+def has_dead_characters_on_floor(floor):
+    """Check if there are dead characters that died on a specific floor"""
+    dead_characters = get_dead_characters()
+    return any(char.get("death_floor") == floor for char in dead_characters)
+
+
+
+def get_character_id(character_data):
+    """Generate a unique character ID based on character data"""
+    import hashlib
+    
+    # Create a unique identifier based on character creation data
+    unique_string = f"{character_data.get('player_level', 1)}_{character_data.get('player_xp', 0)}_{character_data.get('enemies_defeated', 0)}_{character_data.get('bosses_defeated', 0)}_{character_data.get('total_damage_dealt', 0)}_{character_data.get('total_damage_taken', 0)}_{character_data.get('rooms_explored', 0)}_{character_data.get('move_count', 0)}"
+    
+    # Generate hash for uniqueness
+    character_id = hashlib.md5(unique_string.encode()).hexdigest()[:8]
+    return character_id
 
 def get_save_file_path(save_name):
     """Get the full path for a save file"""
@@ -142,7 +251,8 @@ def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, pla
               unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
               player_level=1, player_xp=0, player_xp_to_next=100, player_skill_points=0, enemies_defeated=0, bosses_defeated=0,
               total_damage_dealt=0, total_damage_taken=0, critical_hits=0, attack_count=0, rooms_explored=0,
-              floors_visited=None, move_count=0, items_collected=0, weapons_broken=0, gold_earned=0):
+              floors_visited=None, move_count=0, items_collected=0, weapons_broken=0, gold_earned=0, living=True,
+              death_floor=None, death_x=None, death_y=None, death_timestamp=None, times_died=0, last_death_date=None):
     
     # Import unique items system to get discovered uniques
     from unique_items import discovered_uniques
@@ -219,7 +329,14 @@ def save_game(save_name, worlds, inventory, armor_inventory, equipped_armor, pla
         "move_count": move_count,
         "items_collected": items_collected,
         "weapons_broken": weapons_broken,
-        "gold_earned": gold_earned
+        "gold_earned": gold_earned,
+        "living": living,
+        "death_floor": death_floor,
+        "death_x": death_x,
+        "death_y": death_y,
+        "death_timestamp": death_timestamp,
+        "times_died": times_died,
+        "last_death_date": last_death_date
     }
     
     save_path = get_save_file_path(save_name)
@@ -239,7 +356,8 @@ def auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_fl
                    unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
                    player_level=1, player_xp=0, player_xp_to_next=100, player_skill_points=0, enemies_defeated=0, bosses_defeated=0,
                    total_damage_dealt=0, total_damage_taken=0, critical_hits=0, attack_count=0, rooms_explored=0,
-                   floors_visited=None, move_count=0, items_collected=0, weapons_broken=0, gold_earned=0):
+                   floors_visited=None, move_count=0, items_collected=0, weapons_broken=0, gold_earned=0, living=True,
+                   death_floor=None, death_x=None, death_y=None, death_timestamp=None, times_died=0, last_death_date=None):
     """Auto-save the game (overwrites previous auto-save)"""
     
     # Ensure set parameters are properly converted to lists for JSON serialization
@@ -253,7 +371,7 @@ def auto_save_game(worlds, inventory, armor_inventory, equipped_armor, player_fl
                      unlocked_floors_list, waypoints, waypoint_scrolls, discovered_enemies_list, learned_spells, spell_scrolls, using_fists,
                      player_level, player_xp, player_xp_to_next, enemies_defeated, bosses_defeated, total_damage_dealt,
                      total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited_list, move_count,
-                     items_collected, weapons_broken, gold_earned)
+                     items_collected, weapons_broken, gold_earned, living, death_floor, death_x, death_y, death_timestamp, times_died, last_death_date)
 
 def load_game(save_name=None):
     """Load a game from a specific save file"""
@@ -308,6 +426,12 @@ def load_game(save_name=None):
             data = json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
         print(f"Error reading save file '{save_name}'. File may be corrupted.")
+        return None
+
+    # Check if character is dead
+    living = data.get("living", True)
+    if not living:
+        print("That character is dead! Go check the graveyard folder and read the README for how to revive it!")
         return None
 
     # Handle old save format
@@ -455,7 +579,14 @@ def load_game(save_name=None):
         "move_count": get_save_field_with_default(data, "move_count"),
         "items_collected": get_save_field_with_default(data, "items_collected"),
         "weapons_broken": get_save_field_with_default(data, "weapons_broken"),
-        "gold_earned": get_save_field_with_default(data, "gold_earned")
+        "gold_earned": get_save_field_with_default(data, "gold_earned"),
+        "living": get_save_field_with_default(data, "living", True),
+        "death_floor": get_save_field_with_default(data, "death_floor"),
+        "death_x": get_save_field_with_default(data, "death_x"),
+        "death_y": get_save_field_with_default(data, "death_y"),
+        "death_timestamp": get_save_field_with_default(data, "death_timestamp"),
+        "times_died": get_save_field_with_default(data, "times_died", 0),
+        "last_death_date": get_save_field_with_default(data, "last_death_date")
     }
 
 def delete_save(save_name):

@@ -1,0 +1,37 @@
+Bug Report: IndexError - pop index out of range in handle_attack
+Date: 2025-01-21
+Status: RESOLVED
+
+ISSUE DESCRIPTION:
+When using a Spell Book weapon to attack enemies, the game crashes with "IndexError: pop index out of range" at line 359 in command_handlers.py. This happens during the enemies.pop(choice) operation.
+
+STEPS TO REPRODUCE:
+1. Have a Spell Book weapon equipped
+2. Find enemies to attack
+3. Use the attack command
+4. Select a spell to cast
+5. Game crashes with IndexError
+
+ROOT CAUSE:
+Variable scope conflict in the handle_attack function. There were two different 'choice' variables:
+1. First 'choice' - Used for selecting which enemy to attack (enemy index)
+2. Second 'choice' - Used for selecting which spell to cast (spell index)
+
+The second 'choice' variable was overwriting the first one, so when the code later tried to do enemies.pop(choice), it was using the spell choice index instead of the enemy choice index. This caused the pop operation to fail when the spell index was out of range for the enemies list.
+
+SOLUTION IMPLEMENTED:
+Changed the spell selection variable from 'choice' to 'spell_choice' to avoid the variable name conflict. This ensures that:
+- The enemy selection 'choice' variable remains intact
+- The spell selection uses a separate 'spell_choice' variable
+- enemies.pop(choice) uses the correct enemy index
+
+FILES MODIFIED:
+- command_handlers.py: Renamed spell selection variable from 'choice' to 'spell_choice'
+
+TESTING:
+- Syntax check passed
+- Import test passed
+- Spell Book attacks should now work without crashing
+
+LESSON LEARNED:
+Always use unique variable names within the same function scope, especially when dealing with user input selections that will be used later. Variable name conflicts can cause subtle bugs that are hard to track down.

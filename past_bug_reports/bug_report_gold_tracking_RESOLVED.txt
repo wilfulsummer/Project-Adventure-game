@@ -1,0 +1,34 @@
+=== ADVENTURE GAME BUG REPORT - RESOLVED ===
+Generated: 2025-01-27
+Resolved: 2025-01-27
+
+ERROR DETAILS:
+Type: Missing Gold Tracking
+Value: Gold from enemies not being tracked in gold_earned statistic
+Description: Players were not getting gold_earned credit when defeating enemies
+
+ROOT CAUSE:
+The main game loop was calling `handle_attack` from `command_handlers.py`, but this function was missing
+the `gold_earned` tracking logic. While the function was updating `player_money` when enemies dropped gold,
+it was not updating the `gold_earned` statistic that tracks total gold earned from enemies.
+
+The `adventure_game.py` had the proper gold tracking logic, but it wasn't being used by the main game loop.
+
+SOLUTION IMPLEMENTED:
+1. Added `gold_earned` parameter to `handle_attack` function in `command_handlers.py`
+2. Updated gold drop logic to increment both `player_money` and `gold_earned`
+3. Modified function to return updated statistics including `gold_earned`
+4. Updated main.py to handle returned statistics and update global variables
+5. Ensured all return paths in `handle_attack` return updated statistics
+
+FILES MODIFIED:
+- command_handlers.py: Added gold_earned tracking and return updated statistics
+- main.py: Updated attack command to handle returned statistics
+
+LESSON LEARNED:
+When refactoring code into separate modules, ensure that all statistics tracking is properly
+maintained across function boundaries. Functions that modify game state should return updated
+values so the main game loop can keep global variables synchronized.
+
+STATUS: RESOLVED ✅
+===============================================

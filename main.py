@@ -15,7 +15,7 @@ def handle_player_death():
     global learned_spells, spell_scrolls, using_fists, inventory, armor_inventory, equipped_armor, armor_broken
     global player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated
     global total_damage_dealt, total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited
-    global move_count, items_collected, weapons_broken, gold_earned, discovered_uniques
+    global move_count, items_collected, weapons_broken, gold_earned, discovered_uniques, living
     
     print("\n=== GAME OVER ===")
     print("Your adventure has ended...")
@@ -79,6 +79,9 @@ def handle_player_death():
             # Reset unique items
             discovered_uniques = {}
             
+            # Reset character status
+            living = True
+            
             # Auto-save current state before clearing (in case they want to recover)
             try:
                 from save_load import auto_save_game
@@ -88,7 +91,7 @@ def handle_player_death():
                              unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
                              player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated, total_damage_dealt,
                              total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
-                             items_collected, weapons_broken, gold_earned)
+                             items_collected, weapons_broken, gold_earned, living, death_floor, death_x, death_y, death_timestamp, times_died, last_death_date)
                 print("(Auto-saved current state before restart!)")
             except Exception as e:
                 print(f"(Auto-save failed: {e})")
@@ -111,6 +114,8 @@ def handle_player_death():
         else:
             print("Please answer 'yes' or 'no'.")
 
+
+
 def main():
     global worlds, player_floor, player_x, player_y, inventory, armor_inventory, equipped_armor
     global player_hp, player_max_hp, player_stamina, player_max_stamina, player_mana, player_max_mana
@@ -121,7 +126,8 @@ def main():
     global discovered_uniques
     global player_level, player_xp, player_xp_to_next, player_skill_points
     global enemies_defeated, bosses_defeated, rooms_explored, floors_visited, move_count
-    global items_collected, weapons_broken, gold_earned
+    global items_collected, weapons_broken, gold_earned, living
+    global death_floor, death_x, death_y, death_timestamp, times_died, last_death_date
     
     # Initialize bug reporting system
     try:
@@ -228,6 +234,62 @@ def main():
                 except (ValueError, EOFError, KeyboardInterrupt):
                     print("Please enter a valid number or press Enter to cancel.")
                     break
+    else:
+        # No save files found - initialize new game variables
+        print("\nNo save files found. Starting new game...")
+        player_floor = 1
+        player_x = 0
+        player_y = 0
+        player_hp = 50
+        player_max_hp = 50
+        player_stamina = 100
+        player_max_stamina = 100
+        player_mana = 50
+        player_max_mana = 50
+        player_money = 0
+        player_potions = 0
+        stamina_potions = 0
+        mana_potions = 0
+        waypoint_scrolls = 1
+        mysterious_keys = {}
+        golden_keys = 0
+        unlocked_floors = set()
+        waypoints = {}
+        discovered_enemies = set()
+        learned_spells = []
+        spell_scrolls = {}
+        using_fists = True
+        inventory = []
+        armor_inventory = []
+        equipped_armor = None
+        armor_broken = 0
+        player_level = 1
+        player_xp = 0
+        player_xp_to_next = 100
+        player_skill_points = 0
+        enemies_defeated = 0
+        bosses_defeated = 0
+        total_damage_dealt = 0
+        total_damage_taken = 0
+        critical_hits = 0
+        attack_count = 0
+        rooms_explored = 0
+        floors_visited = set()
+        move_count = 0
+        items_collected = 0
+        weapons_broken = 0
+        gold_earned = 0
+        discovered_uniques = {}
+        living = True
+        worlds = {}
+        
+        # Initialize graveyard system defaults
+        death_floor = None
+        death_x = None
+        death_y = None
+        death_timestamp = None
+        times_died = 0
+        last_death_date = None
 
     while True:
         current_room = get_room(player_floor, player_x, player_y, worlds, learned_spells)
@@ -250,7 +312,7 @@ def main():
                              unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
                              player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated, total_damage_dealt,
                              total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
-                             items_collected, weapons_broken, gold_earned)
+                             items_collected, weapons_broken, gold_earned, living, death_floor, death_x, death_y, death_timestamp, times_died, last_death_date)
                 print("(Auto-saved before exit!)")
             except Exception as e:
                 print(f"(Auto-save failed: {e})")
@@ -268,7 +330,7 @@ def main():
                              unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
                              player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated, total_damage_dealt,
                              total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
-                             items_collected, weapons_broken, gold_earned)
+                             items_collected, weapons_broken, gold_earned, living, death_floor, death_x, death_y, death_timestamp, times_died, last_death_date)
                 print("(Auto-saved before exit!)")
             except Exception as e:
                 print(f"(Auto-save failed: {e})")
@@ -294,7 +356,7 @@ def main():
                      unlocked_floors, waypoints, waypoint_scrolls, discovered_enemies, learned_spells, spell_scrolls, using_fists,
                      player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated, total_damage_dealt,
                      total_damage_taken, critical_hits, attack_count, rooms_explored, floors_visited, move_count,
-                     items_collected, weapons_broken, gold_earned)
+                     items_collected, weapons_broken, gold_earned, living, death_floor, death_x, death_y, death_timestamp, times_died, last_death_date)
         elif command == "load":
             loaded_data = load_game()
             if loaded_data:
@@ -710,7 +772,7 @@ def main():
                                      discovered_enemies, learned_spells, spell_scrolls, using_fists,
                                      player_level, player_xp, player_xp_to_next, player_skill_points, enemies_defeated, bosses_defeated,
                                      total_damage_dealt, total_damage_taken, critical_hits, attack_count,
-                                     rooms_explored, floors_visited, move_count, items_collected, weapons_broken, gold_earned)
+                                     rooms_explored, floors_visited, move_count, items_collected, weapons_broken, gold_earned, living, death_floor, death_x, death_y, death_timestamp, times_died, last_death_date)
                         print("(Auto-saved!)")
                         main.room_count = 0  # Reset counter
                     except Exception as e:
@@ -743,6 +805,62 @@ def main():
             
             if not success:
                 # Player was defeated
+                # Save dead character to graveyard before handling death
+                try:
+                    from save_load import save_dead_character, get_character_id
+                    character_data = {
+                        "player_hp": player_hp,
+                        "player_max_hp": player_max_hp,
+                        "player_stamina": player_stamina,
+                        "player_max_stamina": player_max_stamina,
+                        "player_mana": player_mana,
+                        "player_max_mana": player_max_mana,
+                        "player_money": player_money,
+                        "player_potions": player_potions,
+                        "stamina_potions": stamina_potions,
+                        "mana_potions": mana_potions,
+                        "waypoint_scrolls": waypoint_scrolls,
+                        "golden_keys": golden_keys,
+                        "mysterious_keys": mysterious_keys,
+                        "unlocked_floors": list(unlocked_floors),
+                        "waypoints": waypoints,
+                        "discovered_enemies": list(discovered_enemies),
+                        "learned_spells": learned_spells,
+                        "spell_scrolls": spell_scrolls,
+                        "using_fists": using_fists,
+                        "inventory": inventory,
+                        "armor_inventory": armor_inventory,
+                        "equipped_armor": equipped_armor,
+                        "player_level": player_level,
+                        "player_xp": player_xp,
+                        "player_xp_to_next": player_xp_to_next,
+                        "player_skill_points": player_skill_points,
+                        "enemies_defeated": enemies_defeated,
+                        "bosses_defeated": bosses_defeated,
+                        "total_damage_dealt": total_damage_dealt,
+                        "total_damage_taken": total_damage_taken,
+                        "critical_hits": critical_hits,
+                        "attack_count": attack_count,
+                        "rooms_explored": rooms_explored,
+                        "floors_visited": list(floors_visited),
+                        "move_count": move_count,
+                        "items_collected": items_collected,
+                        "weapons_broken": weapons_broken,
+                        "gold_earned": gold_earned,
+                        "discovered_uniques": discovered_uniques,
+                        "living": living
+                    }
+                    
+                    # Generate unique character ID
+                    character_id = get_character_id(character_data)
+                    character_data["character_id"] = character_id
+                    
+                    save_dead_character(character_data, player_floor, player_x, player_y)
+                    print(f"Your character has been laid to rest in the graveyard...")
+                    print(f"Character ID: {character_id} (use this to revive if needed)")
+                except Exception as e:
+                    print(f"Failed to save character to graveyard: {e}")
+                
                 handle_player_death()
                 break
         
@@ -755,6 +873,11 @@ def main():
         
         elif command == "equipment":
             handle_equipment(inventory, armor_inventory, equipped_armor, using_fists)
+        
+        elif command == "inspect":
+            handle_inspect(command_parts, current_room, inventory, armor_inventory)
+        
+
         
         elif command == "repair_status":
             # Show repair status of weapons
@@ -839,10 +962,12 @@ def main():
                 for item_name, items in item_groups.items():
                     if len(items) == 1:
                         item = items[0]
-                        print(f"  {item_index}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}) - {item['cost']} gold")
+                        max_durability = item.get("max_durability", item["durability"] + 5)
+                        print(f"  {item_index}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}/{max_durability}) - {item['cost']} gold")
                     else:
                         item = items[0]  # Use first item for stats
-                        print(f"  {item_index}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}) - {item['cost']} gold ({len(items)} available)")
+                        max_durability = item.get("max_durability", item["durability"] + 5)
+                        print(f"  {item_index}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}/{max_durability}) - {item['cost']} gold ({len(items)} available)")
                     item_index += 1
                 
                 if shop.get("armor"):

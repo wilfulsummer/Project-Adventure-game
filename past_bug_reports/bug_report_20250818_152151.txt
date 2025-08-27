@@ -1,0 +1,49 @@
+=== ADVENTURE GAME BUG REPORT ===
+Generated: 2025-08-18 15:21:51
+
+ERROR DETAILS:
+Type: AttributeError
+Value: 'list' object has no attribute 'get'
+Description: 'list' object has no attribute 'get'
+
+TRACEBACK:
+  File "main.py", line 1056, in <module>
+  File "main.py", line 164, in main
+  File "ui_functions.py", line 133, in show_room
+
+
+SYSTEM INFORMATION:
+Python Version: 3.9.13 (tags/v3.9.13:6de2ca5, May 17 2022, 16:36:42) [MSC v.1929 64 bit (AMD64)]
+Platform: win32
+Executable: C:\Users\Owner\Downloads\Adventure_Game.exe
+Working Directory: C:\Users\Owner\Downloads
+
+GAME STATE (if available):
+{
+  "player_position": "Floor 1, (0, 0)",
+  "player_stats": {
+    "hp": 50,
+    "max_hp": 50,
+    "stamina": 20,
+    "mana": 20
+  },
+  "inventory_count": 1,
+  "armor_count": 0,
+  "current_command": "Unknown"
+}
+
+INSTRUCTIONS FOR PLAYER:
+1. This bug report has been saved to: bug_reports\bug_report_20250818_152151.txt
+2. Please describe what you were doing when this error occurred
+3. Include any relevant details about your game progress
+4. You can find this file in the 'bug_reports' folder
+5. Consider sharing this report with the game developers
+
+INSTRUCTIONS FOR DEVELOPER:
+1. Check the traceback above for the error location
+2. Review the game state to understand the context
+3. Test the specific scenario that caused this error
+4. Fix the issue and update the game
+
+Thank you for helping improve the game!
+===============================================

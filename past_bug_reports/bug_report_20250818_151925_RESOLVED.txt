@@ -1,0 +1,40 @@
+=== ADVENTURE GAME BUG REPORT - RESOLVED ===
+Generated: 2025-08-18 15:19:25
+Resolved: 2025-01-27
+
+ERROR DETAILS:
+Type: AttributeError
+Value: 'list' object has no attribute 'get'
+Description: 'list' object has no attribute 'get'
+
+TRACEBACK:
+  File "C:\Users\Owner\OneDrive\Desktop\Adventure_game.py\main.py", line 1092, in <module>
+    main()
+    ~~~~~~ File "C:\Users\Owner\OneDrive\Desktop\Adventure_game.py\main.py", line 195, in main
+    show_room(current_room, player_floor, player_x, player_y, inventory, player_hp, player_max_hp,
+    ~~~~~~~~~~ File "C:\Users\Owner\OneDrive\Desktop\Adventure_game.py\ui_functions.py", line 133, in show_room
+    tag = " [BOSS]" if e.get("is_boss") else ""
+                       ^
+
+ROOT CAUSE:
+The UI code was trying to call .get() method on enemy data that could be either a dictionary
+(single enemy) or a list (spider swarm). The code had logic to handle both cases but
+lacked proper type checking and safety measures.
+
+SOLUTION IMPLEMENTED:
+1. Enhanced enemy data structure validation in ui_functions.py
+2. Added proper type checking with isinstance() before calling .get()
+3. Added safety checks for empty lists and malformed enemy data
+4. Implemented fallback handling for unknown enemy types
+5. Added defensive programming with .get() calls using default values
+
+FILES MODIFIED:
+- ui_functions.py: Enhanced enemy display logic with robust type checking
+
+LESSON LEARNED:
+When dealing with polymorphic data structures (dict vs list), always validate the type
+before calling methods. Use defensive programming with .get() and default values to
+prevent crashes from malformed data.
+
+STATUS: RESOLVED ✅
+===============================================

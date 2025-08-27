@@ -1,0 +1,41 @@
+Bug Report: Double Enemy Death Bug - Multiple Enemies Dying from Single Attack
+Date: 2025-01-21
+Status: RESOLVED
+
+ISSUE DESCRIPTION:
+When attacking spider swarms (or other multiple enemy groups), the game was causing multiple enemies to die from a single attack. The combat log would show:
+1. "You defeated the Spider!" (from direct attack)
+2. "The Spider dies from the effects!" (second spider dying mysteriously)
+
+This resulted in players getting double gold drops and enemies being removed incorrectly.
+
+STEPS TO REPRODUCE:
+1. Find a room with multiple enemies (spider swarm)
+2. Attack one enemy with a weapon
+3. See multiple enemies die and multiple gold drops
+4. Combat log shows confusing "dies from the effects" message
+
+ROOT CAUSE:
+The handle_attack function had TWO enemies.pop(choice) calls using the same 'choice' index:
+1. First pop: When enemy dies from direct attack (enemies.pop(choice))
+2. Second pop: When enemy dies from status effects (enemies.pop(choice))
+
+The problem was that after the first enemy was removed, the enemy list indices shifted, but the second pop was still using the original 'choice' index. This caused the wrong enemy to be removed, creating the illusion of "effects" killing a second enemy.
+
+SOLUTION IMPLEMENTED:
+Changed the second enemies.pop(choice) to use enemies.index(target_enemy) to find the correct current index of the specific enemy that died from status effects. This ensures:
+- Each enemy is removed by its actual current position in the list
+- No duplicate removals occur
+- The correct enemy is always removed
+- Combat behaves as expected
+
+FILES MODIFIED:
+- command_handlers.py: Fixed enemy removal logic for status effect deaths
+
+TESTING:
+- Syntax check passed
+- Import test passed
+- Combat should now work correctly with single enemy deaths per attack
+
+LESSON LEARNED:
+When removing items from a list that's being modified during iteration, always use the item's current position rather than a cached index. List indices shift when items are removed, making cached indices invalid.

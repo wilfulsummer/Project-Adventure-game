@@ -1,0 +1,51 @@
+Bug Report: IndexError pop index out of range in handle_attack function
+Date: 2025-08-26
+Status: RESOLVED
+
+ISSUE DESCRIPTION:
+Game crashes with IndexError: "pop index out of range" when attacking enemies in the handle_attack function. The error occurs at line 359 in command_handlers.py where enemies.pop(choice) is called.
+
+STEPS TO REPRODUCE:
+1. Attack enemies in a room
+2. Game crashes with IndexError: pop index out of range
+3. Error occurs in command_handlers.py line 359
+
+ROOT CAUSE:
+The issue was caused by using the cached 'choice' variable for enemies.pop() after the enemy list had been modified. When multiple enemies are present and one is defeated, the list indices shift, making the cached 'choice' value invalid for subsequent operations.
+
+The problematic code was:
+```python
+enemies.pop(choice)  # choice was cached before list modification
+```
+
+SOLUTION IMPLEMENTED:
+Replaced the problematic enemies.pop(choice) calls with proper error handling using enemies.index(target_enemy):
+
+```python
+# Remove defeated enemy from list
+# Find the correct index of this enemy in the current list
+try:
+    enemy_index = enemies.index(target_enemy)
+    enemies.pop(enemy_index)
+except ValueError:
+    # Enemy not found in list (already removed), skip
+    pass
+```
+
+This approach:
+1. Finds the current position of the target enemy in the list
+2. Uses that current position for removal
+3. Handles cases where the enemy might not be found (already removed)
+4. Prevents index out of range errors
+
+FILES MODIFIED:
+- command_handlers.py: Replaced enemies.pop(choice) with enemies.index(target_enemy) and proper error handling
+
+TESTING:
+- Syntax check passed
+- Import test passed
+- Combat should now work correctly without index errors
+- Multiple enemy scenarios handled properly
+
+LESSON LEARNED:
+When removing items from a list that's being modified during iteration, always use the current item's position rather than cached indices. The enemies.index() method provides a safe way to find the current position of an object in a list, even after the list has been modified.

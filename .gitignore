@@ -1,55 +1,38 @@
-# Git ignore file itself
-.gitignore
+# Graveyard folder - only ignore character save files, keep README
+graveyard/*.json
 
-# Note: .cursorrules is intentionally committed for development guidelines
-
-# Save files and user data
+# Save files
 saves/
 *.json
-
-# Bug reports (archived)
-past_bug_reports/
-
-# Weird/corrupted files that shouldn't be tracked
-tatus
-et
-"ystem and auto-save functionality*"
-*357*
-*200*
-*242*
-
-# Test files (temporary)
-test_*.py
-TEST_*.md
-run_tests.py
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# Test output files
+*_output.txt
+*.log
+*.out
 
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS files
 .DS_Store
 Thumbs.db
-desktop.ini
 
-# Build artifacts
-build/
-dist/
-*.spec
+# Temporary files
+*.tmp
+*.temp
 
  

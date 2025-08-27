@@ -1586,6 +1586,15 @@ while True:
               
               player_hp -= enemy_damage
               total_damage_taken += enemy_damage
+              
+              # Vampire life steal mechanic
+              if enemy.get("is_vampire") and enemy.get("life_steal_ratio"):
+                  life_steal_amount = int(enemy_damage * enemy["life_steal_ratio"])
+                  enemy["hp"] = min(enemy["hp"] + life_steal_amount, enemy.get("max_hp", enemy["hp"] + life_steal_amount))
+                  print(f"The {enemy['name']} drains {life_steal_amount} HP from you!")
+                  if enemy["hp"] > enemy.get("max_hp", enemy["hp"]):
+                      enemy["hp"] = enemy.get("max_hp", enemy["hp"])
+              
               print(f"The {enemy['name']} attacks you for {enemy_damage} damage!")
               print(f"You have {player_hp} HP remaining.")
               
@@ -1885,7 +1894,8 @@ while True:
       
       print("\nShop inventory:")
       for i, item in enumerate(shop["items"]):
-        print(f"  {i+1}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}) - {item['cost']} gold (1 left)")
+        max_durability = item.get("max_durability", item["durability"] + 5)
+        print(f"  {i+1}. {item['name']} (Damage: {item['damage']}, Durability: {item['durability']}/{max_durability}) - {item['cost']} gold (1 left)")
       if shop.get("armor"):
         armor = shop["armor"]
         print(f"  R. {armor['name']} (Defense: {armor['defense']}, Durability: {armor['durability']}) - 14 gold (1 left)")
